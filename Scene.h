@@ -5,11 +5,13 @@
 #pragma once
 
 #include "Shader.h"
+#include "Player.h"
 
 class CScene
 {
 public:
-    CScene();
+	CScene() {}
+    CScene(CPlayer* pPlayer);
     ~CScene();
 
 	virtual void OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam);
@@ -27,7 +29,10 @@ public:
 	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera=NULL);
 
 	void ReleaseUploadBuffers();
-
+	void SetPlayer(CPlayer* pPlayer) { m_pPlayer = pPlayer; }
+	void BuildGraphicsRootSignature(ID3D12Device* pd3dDevice);
+protected:
+	CPlayer* m_pPlayer = NULL;
 protected:
 	ID3D12RootSignature			*m_pd3dGraphicsRootSignature = NULL;
 
@@ -37,6 +42,7 @@ protected:
 
 class CTitleScene : public CScene {
 public:
+	CTitleScene::CTitleScene() {}
 	CTitleScene(CPlayer* pPlayer);
 	virtual void BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList) override;
 	virtual void ReleaseObjects() override;

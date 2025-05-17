@@ -43,6 +43,9 @@ public:
 	void OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam);
 	LRESULT CALLBACK OnProcessingWindowMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam);
 
+	ID3D12Device* GetDevice() const { return m_pd3dDevice; }
+	ID3D12GraphicsCommandList* GetCommandList() const { return m_pd3dCommandList; }
+
 	void ChangeScene(int newSceneNumber);
 	void RequestSceneChange(int sceneNumber);
 private:

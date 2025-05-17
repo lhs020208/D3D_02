@@ -4,9 +4,12 @@
 
 #include "stdafx.h"
 #include "Scene.h"
+#include "GameFramework.h"
+extern CGameFramework* g_pFramework;
 
-CScene::CScene()
+CScene::CScene(CPlayer* pPlayer)
 {
+	m_pPlayer = pPlayer;
 }
 
 CScene::~CScene()
@@ -124,24 +127,6 @@ void CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam,
 }
 void CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
-	switch (nMessageID)
-	{
-	case WM_KEYUP:
-		switch (wParam)
-		{
-		case VK_ESCAPE:
-			::PostQuitMessage(0);
-			break;
-		case VK_RETURN:
-			m_ppObjects[4]->PrepareExplosion();
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		break;
-	}
 }
 
 bool CScene::ProcessInput()
@@ -172,4 +157,84 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 		if (m_ppObjects[j]) m_ppObjects[j]->Render(pd3dCommandList, pCamera);
 	}
 }
+void CScene::BuildGraphicsRootSignature(ID3D12Device* pd3dDevice)
+{
+	m_pd3dGraphicsRootSignature = CreateGraphicsRootSignature(pd3dDevice);
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CTitleScene::CTitleScene(CPlayer* pPlayer) : CScene(pPlayer) {}
+void CTitleScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList) 
+{
+	m_pd3dGraphicsRootSignature = CreateGraphicsRootSignature(pd3dDevice);
+	CMesh* cTitleMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Title.obj");
 
+	CPseudoLightingShader* pShader = new CPseudoLightingShader();
+	pShader->CreateShader(pd3dDevice, m_pd3dGraphicsRootSignature);
+	pShader->CreateShaderVariables(pd3dDevice, pd3dCommandList);
+
+	m_pTitleObjects = new CTitleObject();
+	m_pTitleObjects->SetMesh(cTitleMesh);
+	m_pTitleObjects->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
+	m_pTitleObjects->SetShader(pShader);
+	m_pTitleObjects->SetPosition(0.0f, 0.0f, 1.0f);
+	m_pTitleObjects->UpdateBoundingBox();
+}
+void CTitleScene::ReleaseObjects()
+{
+	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
+	if (m_pTitleObjects) delete m_pTitleObjects;
+}
+void CTitleScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	pCamera->SetViewportsAndScissorRects(pd3dCommandList);
+	pCamera->UpdateShaderVariables(pd3dCommandList);
+
+	if (m_pTitleObjects) m_pTitleObjects->Render(pd3dCommandList, pCamera);
+}
+
+void CTitleScene::Animate(float fElapsedTime)
+{
+	if (m_pTitleObjects) m_pTitleObjects->Animate(fElapsedTime);
+}
+CGameObject* CTitleScene::PickObjectPointedByCursor(int xClient, int yClient, CCamera* pCamera)
+{
+
+	XMFLOAT3 xmf3PickPosition;
+	xmf3PickPosition.x = (((2.0f * xClient) / (float)pCamera->m_d3dViewport.Width) - 1) / pCamera->m_xmf4x4Projection._11;
+	xmf3PickPosition.y = -(((2.0f * yClient) / (float)pCamera->m_d3dViewport.Height) - 1) / pCamera->m_xmf4x4Projection._22;
+	xmf3PickPosition.z = 1.0f;
+
+	XMVECTOR xmvPickPosition = XMLoadFloat3(&xmf3PickPosition);
+	XMMATRIX xmmtxView = XMLoadFloat4x4(&pCamera->m_xmf4x4View);
+
+	float fNearestHitDistance = FLT_MAX;
+	CGameObject* pNearestObject = NULL;
+	if (m_pTitleObjects)
+	{
+		int hit = m_pTitleObjects->PickObjectByRayIntersection(xmvPickPosition, xmmtxView, &fNearestHitDistance);
+		if (hit > 0)
+		{
+			pNearestObject = m_pTitleObjects;
+		}
+	}
+	return(pNearestObject);
+}
+
+void CTitleScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	switch (nMessageID)
+	{
+	case WM_LBUTTONDOWN:
+		int x = LOWORD(lParam);
+		int y = HIWORD(lParam);
+		CCamera* pCamera = m_pPlayer->GetCamera();  //여기서 확보
+		CGameObject* pPickedObject = PickObjectPointedByCursor(x, y, pCamera);
+
+		if (pPickedObject) {
+			if (!m_pTitleObjects->IsBlowingUp()) {
+				m_pTitleObjects->PrepareExplosion(g_pFramework->GetDevice(), g_pFramework->GetCommandList());
+			}
+		}
+
+	}
+}

@@ -8,14 +8,13 @@
 //
 class CVertex
 {
-protected:
-    XMFLOAT3						m_xmf3Position;	
-
 public:
 	CVertex() { m_xmf3Position = XMFLOAT3(0.0f, 0.0f, 0.0f); }
     CVertex(float x, float y, float z) { m_xmf3Position = XMFLOAT3(x, y, z); }
 	CVertex(XMFLOAT3 xmf3Position) { m_xmf3Position = xmf3Position; }
 	~CVertex() { }
+
+	XMFLOAT3						m_xmf3Position;
 };
 
 class CPolygon
@@ -61,6 +60,9 @@ public:
 
 	void ReleaseUploadBuffers();
     void SetPolygon(int nIndex, CPolygon* pPolygon);
+	int CheckRayIntersection(XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection, float* pfNearHitDistance);
+	BOOL RayIntersectionByTriangle(XMVECTOR& xmRayOrigin, XMVECTOR& xmRayDirection, XMVECTOR v0, XMVECTOR v1, XMVECTOR v2, float* pfNearHitDistance);
+
 
 	BoundingBox						m_xmBoundingBox;
 	BoundingOrientedBox			    m_xmOOBB = BoundingOrientedBox();

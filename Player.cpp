@@ -229,11 +229,26 @@ void CPlayer::OnPrepareRender()
 	m_xmf4x4World._41 = m_xmf3Position.x; m_xmf4x4World._42 = m_xmf3Position.y; m_xmf4x4World._43 = m_xmf3Position.z;
 }
 
+void CPlayer::SetPosition(float x, float y, float z)
+{
+	m_xmf3Position = XMFLOAT3(x, y, z);
+
+	CGameObject::SetPosition(x, y, z);
+}
+
+void CPlayer::SetCameraOffset(XMFLOAT3& xmf3CameraOffset)
+{
+	m_xmf3CameraOffset = xmf3CameraOffset;
+	m_pCamera->SetLookAt(Vector3::Add(m_xmf3Position, m_xmf3CameraOffset), m_xmf3Position, m_xmf3Up);
+	m_pCamera->GenerateViewMatrix();
+}
+
 void CPlayer::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera)
 {
 	DWORD nCameraMode = (pCamera) ? pCamera->GetMode() : 0x00;
 	if (nCameraMode == THIRD_PERSON_CAMERA) CGameObject::Render(pd3dCommandList, pCamera);
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
