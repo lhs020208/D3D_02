@@ -26,9 +26,9 @@ void CPolygon::SetVertex(int nIndex, CVertex& vertex)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-CMesh::CMesh(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, char *pstrFileName, bool bTextFile)
+CMesh::CMesh(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, char *pstrFileName)
 {
-	if (pstrFileName) LoadMeshFromFile(pd3dDevice, pd3dCommandList, pstrFileName, bTextFile);
+	if (pstrFileName) LoadMeshFromFile(pd3dDevice, pd3dCommandList, pstrFileName);
 }
 CMesh::CMesh(int nPolygons)
 {
@@ -80,112 +80,94 @@ void CMesh::Render(ID3D12GraphicsCommandList *pd3dCommandList)
 	}
 }
 
-void CMesh::LoadMeshFromFile(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, char *pstrFileName, bool bTextFile)
+void CMesh::LoadMeshFromFile(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, char* filename)
 {
-	char pstrToken[64] = { '\0' };
+	std::ifstream file(filename);
+	if (!file.is_open()) return;
 
-	if (bTextFile)
-	{
-		ifstream InFile(pstrFileName);
+	std::vector<XMFLOAT3> vertices;
+	std::vector<UINT> indices;
 
-		for (; ; )
-		{
-			InFile >> pstrToken;
-			if (!InFile) break;
+	std::string line;
+	while (std::getline(file, line)) {
+		std::istringstream iss(line);
+		std::string prefix;
+		iss >> prefix;
 
-			if (!strcmp(pstrToken, "<Vertices>:"))
-			{
-				InFile >> m_nVertices;
-				m_pxmf3Positions = new XMFLOAT3[m_nVertices];
-				for (UINT i = 0; i < m_nVertices; i++) InFile >> m_pxmf3Positions[i].x >> m_pxmf3Positions[i].y >> m_pxmf3Positions[i].z;
-			}
-			else if (!strcmp(pstrToken, "<Normals>:"))
-			{
-				InFile >> pstrToken;
-				m_pxmf3Normals = new XMFLOAT3[m_nVertices];
-				for (UINT i = 0; i < m_nVertices; i++) InFile >> m_pxmf3Normals[i].x >> m_pxmf3Normals[i].y >> m_pxmf3Normals[i].z;
-			}
-			else if (!strcmp(pstrToken, "<TextureCoords>:"))
-			{
-				InFile >> pstrToken;
-				m_pxmf2TextureCoords = new XMFLOAT2[m_nVertices];
-				for (UINT i = 0; i < m_nVertices; i++) InFile >> m_pxmf2TextureCoords[i].x >> m_pxmf2TextureCoords[i].y;
-			}
-			else if (!strcmp(pstrToken, "<Indices>:"))
-			{
-				InFile >> m_nIndices;
-				m_pnIndices = new UINT[m_nIndices];
-				for (UINT i = 0; i < m_nIndices; i++) InFile >> m_pnIndices[i];
+		if (prefix == "v") {
+			float x, y, z;
+			iss >> x >> y >> z;
+			vertices.emplace_back(x, y, z);
+		}
+		else if (prefix == "f") {
+			for (int i = 0; i < 3; ++i) {
+				std::string token;
+				iss >> token;
+				std::istringstream tokenStream(token);
+				std::string vIdx;
+				std::getline(tokenStream, vIdx, '/');
+				int idx = std::stoi(vIdx) - 1;
+				indices.push_back(static_cast<UINT>(idx));
 			}
 		}
 	}
-	else
-	{
-		FILE* pFile = NULL;
-		::fopen_s(&pFile, pstrFileName, "rb");
-		::rewind(pFile);
+	file.close();
 
-		char pstrToken[64] = { '\0' };
+	m_nVertices = static_cast<UINT>(vertices.size());
+	m_nIndices = static_cast<UINT>(indices.size());
 
-		BYTE nStrLength = 0;
-		UINT nReads = 0;
+	m_pxmf3Positions = new XMFLOAT3[m_nVertices];
+	memcpy(m_pxmf3Positions, vertices.data(), sizeof(XMFLOAT3) * m_nVertices);
 
-		nReads = (UINT)::fread(&nStrLength, sizeof(BYTE), 1, pFile);
-		nReads = (UINT)::fread(pstrToken, sizeof(char), 14, pFile); //"<BoundingBox>:"
-		nReads = (UINT)::fread(&m_xmBoundingBox.Center, sizeof(float), 3, pFile);
-		nReads = (UINT)::fread(&m_xmBoundingBox.Extents, sizeof(float), 3, pFile);
+	m_pnIndices = new UINT[m_nIndices];
+	memcpy(m_pnIndices, indices.data(), sizeof(UINT) * m_nIndices);
 
-		nReads = (UINT)::fread(&nStrLength, sizeof(BYTE), 1, pFile);
-		nReads = (UINT)::fread(pstrToken, sizeof(char), 11, pFile); //"<Vertices>:"
-		nReads = (UINT)::fread(&m_nVertices, sizeof(int), 1, pFile);
-		m_pxmf3Positions = new XMFLOAT3[m_nVertices];
-		nReads = (UINT)::fread(m_pxmf3Positions, sizeof(float), 3 * m_nVertices, pFile);
+	// ===== GPU 리소스 생성 =====
 
-		nReads = (UINT)::fread(&nStrLength, sizeof(BYTE), 1, pFile);
-		nReads = (UINT)::fread(pstrToken, sizeof(char), 10, pFile); //"<Normals>:"
-		nReads = (UINT)::fread(&m_nVertices, sizeof(int), 1, pFile);
-		m_pxmf3Normals = new XMFLOAT3[m_nVertices];
-		nReads = (UINT)::fread(m_pxmf3Normals, sizeof(float), 3 * m_nVertices, pFile);
+	// 1. 정점 버퍼
+	UINT vbSize = sizeof(XMFLOAT3) * m_nVertices;
+	m_pd3dPositionBuffer = CreateBufferResource(device, cmdList, m_pxmf3Positions, vbSize,
+		D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3dPositionUploadBuffer);
 
-		nReads = (UINT)::fread(&nStrLength, sizeof(BYTE), 1, pFile);
-		nReads = (UINT)::fread(pstrToken, sizeof(char), 16, pFile); //"<TextureCoords>:"
-		nReads = (UINT)::fread(&m_nVertices, sizeof(int), 1, pFile);
-		m_pxmf2TextureCoords = new XMFLOAT2[m_nVertices];
-		nReads = (UINT)::fread(m_pxmf2TextureCoords, sizeof(float), 2 * m_nVertices, pFile);
-
-		nReads = (UINT)::fread(&nStrLength, sizeof(BYTE), 1, pFile);
-		nReads = (UINT)::fread(pstrToken, sizeof(char), 10, pFile); //"<Indices>:"
-		nReads = (UINT)::fread(&m_nIndices, sizeof(int), 1, pFile);
-		m_pnIndices = new UINT[m_nIndices];
-		nReads = (UINT)::fread(m_pnIndices, sizeof(UINT), m_nIndices, pFile);
-
-		::fclose(pFile);
-	}
-
-	m_pd3dPositionBuffer = ::CreateBufferResource(pd3dDevice, pd3dCommandList, m_pxmf3Positions, sizeof(XMFLOAT3) * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3dPositionUploadBuffer);
-	m_pd3dNormalBuffer = ::CreateBufferResource(pd3dDevice, pd3dCommandList, m_pxmf3Normals, sizeof(XMFLOAT3) * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3dNormalUploadBuffer);
-	m_pd3dTextureCoordBuffer = ::CreateBufferResource(pd3dDevice, pd3dCommandList, m_pxmf2TextureCoords, sizeof(XMFLOAT2) * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3dTextureCoordUploadBuffer);
-
-	m_nVertexBufferViews = 3;
-	m_pd3dVertexBufferViews = new D3D12_VERTEX_BUFFER_VIEW[m_nVertexBufferViews];
-
+	m_nVertexBufferViews = 1;
+	m_pd3dVertexBufferViews = new D3D12_VERTEX_BUFFER_VIEW[1];
 	m_pd3dVertexBufferViews[0].BufferLocation = m_pd3dPositionBuffer->GetGPUVirtualAddress();
 	m_pd3dVertexBufferViews[0].StrideInBytes = sizeof(XMFLOAT3);
-	m_pd3dVertexBufferViews[0].SizeInBytes = sizeof(XMFLOAT3) * m_nVertices;
+	m_pd3dVertexBufferViews[0].SizeInBytes = vbSize;
 
-	m_pd3dVertexBufferViews[1].BufferLocation = m_pd3dNormalBuffer->GetGPUVirtualAddress();
-	m_pd3dVertexBufferViews[1].StrideInBytes = sizeof(XMFLOAT3);
-	m_pd3dVertexBufferViews[1].SizeInBytes = sizeof(XMFLOAT3) * m_nVertices;
-
-	m_pd3dVertexBufferViews[2].BufferLocation = m_pd3dTextureCoordBuffer->GetGPUVirtualAddress();
-	m_pd3dVertexBufferViews[2].StrideInBytes = sizeof(XMFLOAT2);
-	m_pd3dVertexBufferViews[2].SizeInBytes = sizeof(XMFLOAT2) * m_nVertices;
-
-	m_pd3dIndexBuffer = ::CreateBufferResource(pd3dDevice, pd3dCommandList, m_pnIndices, sizeof(UINT) * m_nIndices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_INDEX_BUFFER, &m_pd3dIndexUploadBuffer);
+	// 2. 인덱스 버퍼
+	UINT ibSize = sizeof(UINT) * m_nIndices;
+	m_pd3dIndexBuffer = CreateBufferResource(device, cmdList, m_pnIndices, ibSize,
+		D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_INDEX_BUFFER, &m_pd3dIndexUploadBuffer);
 
 	m_d3dIndexBufferView.BufferLocation = m_pd3dIndexBuffer->GetGPUVirtualAddress();
 	m_d3dIndexBufferView.Format = DXGI_FORMAT_R32_UINT;
-	m_d3dIndexBufferView.SizeInBytes = sizeof(UINT) * m_nIndices;
+	m_d3dIndexBufferView.SizeInBytes = ibSize;
+
+	// OBB 계산
+	XMFLOAT3 min = vertices[0], max = vertices[0];
+	for (const auto& v : vertices) {
+		if (v.x < min.x) min.x = v.x;
+		if (v.y < min.y) min.y = v.y;
+		if (v.z < min.z) min.z = v.z;
+
+		if (v.x > max.x) max.x = v.x;
+		if (v.y > max.y) max.y = v.y;
+		if (v.z > max.z) max.z = v.z;
+	}
+
+	XMFLOAT3 center = {
+		(min.x + max.x) * 0.5f,
+		(min.y + max.y) * 0.5f,
+		(min.z + max.z) * 0.5f
+	};
+	XMFLOAT3 extent = {
+		(max.x - min.x) * 0.5f,
+		(max.y - min.y) * 0.5f,
+		(max.z - min.z) * 0.5f
+	};
+
+	m_xmOOBB = BoundingOrientedBox(center, extent, XMFLOAT4(0, 0, 0, 1));
 }
 
 void CMesh::SetPolygon(int nIndex, CPolygon* pPolygon)

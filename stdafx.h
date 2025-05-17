@@ -10,11 +10,15 @@
 #include <windows.h>
 
 // C의 런타임 헤더 파일입니다.
+#include <iostream>
 #include <stdlib.h>
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
 #include <math.h>
+#include <Mmsystem.h>
+#include <random>
+#include <sstream>
 
 #include <string>
 #include <wrl.h>
@@ -37,7 +41,6 @@ using namespace std;
 
 #include <D3d12SDKLayers.h>
 
-#include <Mmsystem.h>
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;

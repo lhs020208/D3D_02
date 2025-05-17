@@ -13,21 +13,12 @@ CScene::~CScene()
 {
 }
 
-//#define _WITH_TEXT_MODEL_FILE
-#define _WITH_BINARY_MODEL_FILE
-
 void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList)
 {
 	m_pd3dGraphicsRootSignature = CreateGraphicsRootSignature(pd3dDevice);
 
-#ifdef _WITH_TEXT_MODEL_FILE
-	CMesh *pUfoMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/UFO.txt", true);
-	CMesh *pFlyerMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/FlyerPlayership.txt", true);
-#endif
-#ifdef _WITH_BINARY_MODEL_FILE
 	CMesh *pUfoMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 1.0f, 1.0f, 1.0f);
 	CMesh *pFlyerMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 1.0f, 1.0f, 1.0f);
-#endif
 
 	m_nObjects = 5;
 	m_ppObjects = new CGameObject*[m_nObjects];
