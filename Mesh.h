@@ -62,10 +62,9 @@ public:
 	void ReleaseUploadBuffers();
     void SetPolygon(int nIndex, CPolygon* pPolygon);
 
-protected:
 	BoundingBox						m_xmBoundingBox;
-    BoundingOrientedBox			    m_xmOOBB = BoundingOrientedBox();
-
+	BoundingOrientedBox			    m_xmOOBB = BoundingOrientedBox();
+protected:
 	UINT							m_nVertices = 0;
 	XMFLOAT3						*m_pxmf3Positions = NULL;
 	ID3D12Resource					*m_pd3dPositionBuffer = NULL;

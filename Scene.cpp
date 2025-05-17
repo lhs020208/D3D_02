@@ -18,43 +18,43 @@ void CScene::BuildObjects(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *p
 	m_pd3dGraphicsRootSignature = CreateGraphicsRootSignature(pd3dDevice);
 
 	CMesh *pUfoMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 1.0f, 1.0f, 1.0f);
-	CMesh *pFlyerMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 1.0f, 1.0f, 1.0f);
+	CMesh* pFlyerMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Title.obj");
 
 	m_nObjects = 5;
-	m_ppObjects = new CGameObject*[m_nObjects];
+	m_ppObjects = new CTitleObject *[m_nObjects];
 
 	CPseudoLightingShader *pShader = new CPseudoLightingShader();
 	pShader->CreateShader(pd3dDevice, m_pd3dGraphicsRootSignature);
 	pShader->CreateShaderVariables(pd3dDevice, pd3dCommandList);
 
-	m_ppObjects[0] = new CGameObject();
+	m_ppObjects[0] = new CTitleObject();
 	m_ppObjects[0]->SetMesh(pUfoMesh);
 	m_ppObjects[0]->SetShader(pShader);
 	m_ppObjects[0]->SetPosition(6.0f, 0.0f, 13.0f);
 	m_ppObjects[0]->SetColor(XMFLOAT3(0.7f, 0.0f, 0.0f));
 
-	m_ppObjects[1] = new CGameObject();
+	m_ppObjects[1] = new CTitleObject();
 	m_ppObjects[1]->SetMesh(pUfoMesh);
 	m_ppObjects[1]->SetShader(pShader);
 	m_ppObjects[1]->SetPosition(10.0f, -2.0f, 8.0f);
 	m_ppObjects[1]->SetColor(XMFLOAT3(0.0f, 0.7f, 0.0f));
 
-	m_ppObjects[2] = new CGameObject();
+	m_ppObjects[2] = new CTitleObject();
 	m_ppObjects[2]->SetMesh(pUfoMesh);
 	m_ppObjects[2]->SetShader(pShader);
 	m_ppObjects[2]->SetPosition(-5.0f, -4.0f, 11.0f);
 	m_ppObjects[2]->SetColor(XMFLOAT3(0.0f, 0.0f, 0.7f));
 
-	m_ppObjects[3] = new CGameObject();
+	m_ppObjects[3] = new CTitleObject();
 	m_ppObjects[3]->SetMesh(pUfoMesh);
 	m_ppObjects[3]->SetShader(pShader);
 	m_ppObjects[3]->SetPosition(-10.0f, -2.0f, 8.0f);
 
-	m_ppObjects[4] = new CGameObject();
+	m_ppObjects[4] = new CTitleObject();
 	m_ppObjects[4]->SetMesh(pFlyerMesh);
 	m_ppObjects[4]->SetShader(pShader);
 	m_ppObjects[4]->SetPosition(0.0f, 4.0f, 20.0f);
-	m_ppObjects[4]->Rotate(0.0f, 180.0f, 0.0f);
+	m_ppObjects[4]->Rotate(0.0f, 0.0f, 0.0f);
 	m_ppObjects[4]->SetColor(XMFLOAT3(0.25f, 0.75f, 0.65f));
 }
 
@@ -124,6 +124,24 @@ void CScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam,
 }
 void CScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
 {
+	switch (nMessageID)
+	{
+	case WM_KEYUP:
+		switch (wParam)
+		{
+		case VK_ESCAPE:
+			::PostQuitMessage(0);
+			break;
+		case VK_RETURN:
+			m_ppObjects[4]->PrepareExplosion();
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
 }
 
 bool CScene::ProcessInput()

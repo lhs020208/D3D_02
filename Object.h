@@ -22,6 +22,7 @@ public:
 	CShader							*m_pShader = NULL;
 
 	XMFLOAT3						m_xmf3Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	BoundingOrientedBox				m_xmOOBB = BoundingOrientedBox();
 
 	void SetMesh(CMesh *pMesh);
 	void SetShader(CShader *pShader);
@@ -33,13 +34,18 @@ public:
 	virtual void Animate(float fTimeElapsed);
 	virtual void OnPrepareRender() { }
 	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera = NULL);
-
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh);
 	virtual void ReleaseUploadBuffers();
 
 	XMFLOAT3 GetPosition();
 	XMFLOAT3 GetLook();
 	XMFLOAT3 GetUp();
 	XMFLOAT3 GetRight();
+
+	void LookTo(XMFLOAT3& xmf3LookTo, XMFLOAT3& xmf3Up);
+	void LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
+
+	void UpdateBoundingBox();
 
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3 xmf3Position);
@@ -70,4 +76,32 @@ public:
 	virtual void Animate(float fElapsedTime) override;
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
 
+};
+
+class CTitleObject : public CGameObject
+{
+public:
+	CTitleObject();
+	virtual ~CTitleObject();
+
+	virtual void Animate(float fElapsedTime) override;
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
+
+	void Rotate(float fPitch = 0.0f, float fYaw = 10.0f, float fRoll = 0.0f);
+	void Rotate(XMFLOAT3& xmf3Axis, float fAngle);
+	void PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);
+	bool IsBlowingUp() { return m_bBlowingUp; }
+
+private:
+	bool m_bBlowingUp = false;
+	bool m_bPrevBlowingUp = false;
+	float m_fElapsedTimes = 0.0f;
+	float m_fDuration = 2.0f;
+	float m_fExplosionSpeed = 10.0f;
+	float m_fExplosionRotation = 360.0f;
+
+	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
+	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
+
+	static CMesh* m_pExplosionMesh;
 };

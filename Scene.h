@@ -31,7 +31,7 @@ public:
 protected:
 	ID3D12RootSignature			*m_pd3dGraphicsRootSignature = NULL;
 
-	CGameObject					**m_ppObjects = 0;
+	CTitleObject				**m_ppObjects = 0;
 	int							m_nObjects = 0;
 };
 
@@ -46,5 +46,5 @@ public:
 	CGameObject* PickObjectPointedByCursor(int xClient, int yClient, CCamera* pCamera);
 	virtual void OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam) override;
 private:
-	//CTitleObject* m_pTitleObjects;
+	CTitleObject* m_pTitleObjects;
 };
