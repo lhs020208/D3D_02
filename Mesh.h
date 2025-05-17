@@ -1,0 +1,119 @@
+//------------------------------------------------------- ----------------------
+// File: Mesh.h
+//-----------------------------------------------------------------------------
+
+#pragma once
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+class CVertex
+{
+protected:
+    XMFLOAT3						m_xmf3Position;	
+
+public:
+	CVertex() { m_xmf3Position = XMFLOAT3(0.0f, 0.0f, 0.0f); }
+    CVertex(float x, float y, float z) { m_xmf3Position = XMFLOAT3(x, y, z); }
+	CVertex(XMFLOAT3 xmf3Position) { m_xmf3Position = xmf3Position; }
+	~CVertex() { }
+};
+
+class CPolygon
+{
+public:
+    CPolygon() {}
+    CPolygon(int nVertices);
+    ~CPolygon();
+
+    int							m_nVertices = 0;
+    CVertex* m_pVertices = NULL;
+
+    void SetVertex(int nIndex, CVertex& vertex);
+};
+
+class CDiffusedVertex : public CVertex
+{
+protected:
+    XMFLOAT4						m_xmf4Diffuse;		
+
+public:
+	CDiffusedVertex() { m_xmf3Position = XMFLOAT3(0.0f, 0.0f, 0.0f); m_xmf4Diffuse = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f); }
+	CDiffusedVertex(float x, float y, float z, XMFLOAT4 xmf4Diffuse) { m_xmf3Position = XMFLOAT3(x, y, z); m_xmf4Diffuse = xmf4Diffuse; }
+	CDiffusedVertex(XMFLOAT3 xmf3Position, XMFLOAT4 xmf4Diffuse) { m_xmf3Position = xmf3Position; m_xmf4Diffuse = xmf4Diffuse; }
+	~CDiffusedVertex() { }
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class CMesh
+{
+public:
+	CMesh(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, char *pstrFileName = NULL, bool bTextFile = true);
+	CMesh(int nPolygons);
+	virtual ~CMesh();
+
+private:
+	int								m_nReferences = 0;
+
+public:
+	void AddRef() { m_nReferences++; }
+	void Release() { if (--m_nReferences <= 0) delete this; }
+
+	void ReleaseUploadBuffers();
+    void SetPolygon(int nIndex, CPolygon* pPolygon);
+
+protected:
+	BoundingBox						m_xmBoundingBox;
+    BoundingOrientedBox			    m_xmOOBB = BoundingOrientedBox();
+
+	UINT							m_nVertices = 0;
+	XMFLOAT3						*m_pxmf3Positions = NULL;
+	ID3D12Resource					*m_pd3dPositionBuffer = NULL;
+	ID3D12Resource					*m_pd3dPositionUploadBuffer = NULL;
+
+	XMFLOAT3						*m_pxmf3Normals = NULL;
+	ID3D12Resource					*m_pd3dNormalBuffer = NULL;
+	ID3D12Resource					*m_pd3dNormalUploadBuffer = NULL;
+
+	XMFLOAT2						*m_pxmf2TextureCoords = NULL;
+	ID3D12Resource					*m_pd3dTextureCoordBuffer = NULL;
+	ID3D12Resource					*m_pd3dTextureCoordUploadBuffer = NULL;
+
+	UINT							m_nIndices = 0;
+	UINT							*m_pnIndices = NULL;
+	ID3D12Resource					*m_pd3dIndexBuffer = NULL;
+	ID3D12Resource					*m_pd3dIndexUploadBuffer = NULL;
+
+	UINT							m_nVertexBufferViews = 0;
+	D3D12_VERTEX_BUFFER_VIEW		*m_pd3dVertexBufferViews = NULL;
+	D3D12_VERTEX_BUFFER_VIEW		m_d3dVertexBufferView;
+
+	D3D12_INDEX_BUFFER_VIEW			m_d3dIndexBufferView;
+
+	D3D12_PRIMITIVE_TOPOLOGY		m_d3dPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	UINT							m_nSlot = 0;
+	UINT							m_nStride = 0;
+	UINT							m_nOffset = 0;
+
+	UINT							m_nStartIndex = 0;
+	int								m_nBaseVertex = 0;
+
+    int							    m_nPolygons = 0;
+    CPolygon                        **m_ppPolygons = NULL;
+
+public:
+	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList);
+
+	void LoadMeshFromFile(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, char *pstrFileName, bool bTextFile);
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class CCubeMesh : public CMesh
+{
+public:
+	CCubeMesh(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
+		float fWidth = 1.0f, float fHeight = 1.0f, float fDepth = 1.0f);
+
+	virtual ~CCubeMesh();
+};
