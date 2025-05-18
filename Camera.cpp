@@ -325,6 +325,7 @@ CFirstPersonCamera::CFirstPersonCamera(CCamera *pCamera) : CCamera(pCamera)
 	}
 }
 
+
 void CFirstPersonCamera::Rotate(float x, float y, float z)
 {
 	if (x != 0.0f)

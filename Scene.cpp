@@ -156,6 +156,7 @@ void CScene::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera
 	{
 		if (m_ppObjects[j]) m_ppObjects[j]->Render(pd3dCommandList, pCamera);
 	}
+	if (m_pPlayer) m_pPlayer->Render(pd3dCommandList, pCamera);
 }
 void CScene::BuildGraphicsRootSignature(ID3D12Device* pd3dDevice)
 {
