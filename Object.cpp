@@ -195,14 +195,25 @@ void CGameObject::UpdateBoundingBox()
 
 int CGameObject::PickObjectByRayIntersection(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, float* pfHitDistance)
 {
-	int nIntersected = 0;
-	if (m_pMesh)
-	{
-		XMVECTOR xmvPickRayOrigin, xmvPickRayDirection;
-		GenerateRayForPicking(xmvPickPosition, xmmtxView, xmvPickRayOrigin, xmvPickRayDirection);
-		nIntersected = m_pMesh->CheckRayIntersection(xmvPickRayOrigin, xmvPickRayDirection, pfHitDistance);
-	}
-	return(nIntersected);
+	XMMATRIX xmmtxWorld = XMLoadFloat4x4(&m_xmf4x4World);
+	XMMATRIX xmmtxWorldInv = XMMatrixInverse(nullptr, xmmtxWorld);
+
+	// 뷰 행렬 역행렬을 사용해서 Ray Origin (카메라 위치) 추출
+	XMMATRIX xmmtxViewInv = XMMatrixInverse(nullptr, xmmtxView);
+	XMVECTOR xmvPickRayOrigin = xmmtxViewInv.r[3]; // 카메라 위치
+
+	// Pick Ray의 방향을 World 좌표계 기준으로 변환
+	XMVECTOR xmvPickRayDir = XMVector3TransformNormal(xmvPickPosition, xmmtxViewInv);
+	xmvPickRayDir = XMVector3Normalize(xmvPickRayDir);
+
+	// 로컬 공간으로 변환
+	xmvPickRayOrigin = XMVector3TransformCoord(xmvPickRayOrigin, xmmtxWorldInv);
+	xmvPickRayDir = XMVector3TransformNormal(xmvPickRayDir, xmmtxWorldInv);
+	xmvPickRayDir = XMVector3Normalize(xmvPickRayDir);
+
+	if (m_pMesh) return m_pMesh->CheckRayIntersection(xmvPickRayOrigin, xmvPickRayDir, pfHitDistance);
+
+	return 0;
 }
 void CGameObject::GenerateRayForPicking(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection)
 {
