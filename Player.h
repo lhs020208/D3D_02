@@ -15,7 +15,7 @@ public:
 	float           			m_fYaw;
 	float           			m_fRoll;
 
-	XMFLOAT3					m_xmf3CameraOffset = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMFLOAT3					m_xmf3CameraOffset = XMFLOAT3(0.0f, 0.0f, -1.0f);
 	XMFLOAT3					m_xmf3Velocity;
 	XMFLOAT3     				m_xmf3Gravity;
 	float           			m_fMaxVelocityXZ;

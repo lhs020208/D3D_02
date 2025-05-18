@@ -98,6 +98,7 @@ public:
 	virtual void Update(XMFLOAT3& xmf3LookAt, float fTimeElapsed) { }
 	virtual void SetLookAt(XMFLOAT3& xmf3LookAt) { }
 	virtual void SetLookAt(XMFLOAT3& vPosition, XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
+	virtual void SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up) {}
 
 	void CalculateFrustumPlanes();
 	bool IsInFrustum(BoundingBox& xmBoundingBox);
@@ -112,4 +113,5 @@ public:
 
 	virtual void Update(XMFLOAT3& xmf3LookAt, float fTimeElapsed);
 	virtual void SetLookAt(XMFLOAT3& vLookAt);
+	virtual void SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
 };

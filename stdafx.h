@@ -172,6 +172,19 @@ namespace Vector3
 	{
 		return(TransformCoord(xmf3Vector, XMLoadFloat4x4(&xmmtx4x4Matrix)));
 	}
+
+	inline bool Equal(const XMFLOAT3& v1, const XMFLOAT3& v2)
+	{
+		return (v1.x == v2.x && v1.y == v2.y && v1.z == v2.z);
+	}
+
+	inline bool Equal(const XMFLOAT3& v1, const XMFLOAT3& v2, float epsilon)
+	{
+		return (fabsf(v1.x - v2.x) < epsilon &&
+			fabsf(v1.y - v2.y) < epsilon &&
+			fabsf(v1.z - v2.z) < epsilon);
+	}
+
 }
 
 namespace Vector4

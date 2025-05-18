@@ -200,8 +200,7 @@ void CPlayer::SetCameraOffset(XMFLOAT3& xmf3CameraOffset)
 
 void CPlayer::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera)
 {
-	DWORD nCameraMode = (pCamera) ? pCamera->GetMode() : 0x00;
-	if (nCameraMode == THIRD_PERSON_CAMERA) CGameObject::Render(pd3dCommandList, pCamera);
+	CGameObject::Render(pd3dCommandList, pCamera);
 }
 
 
@@ -243,7 +242,7 @@ CCamera * CCubePlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 	switch (nNewCameraMode)
 	{
 	case THIRD_PERSON_CAMERA:
-		SetFriction(250.0f);
+		SetFriction(200.0f);
 		SetGravity(XMFLOAT3(0.0f, 0.0f, 0.0f));
 		SetMaxVelocityXZ(125.0f);
 		SetMaxVelocityY(400.0f);

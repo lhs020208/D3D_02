@@ -490,7 +490,7 @@ void CGameFramework::ProcessInput()
 	{
 		if (cxDelta || cyDelta)
 		{
-			if (Scene_number > 1) {
+			if (Scene_number > -1) {
 				if (pKeysBuffer[VK_RBUTTON] & 0xF0)
 					m_pPlayer->Rotate(cyDelta, 0.0f, -cxDelta);
 				else

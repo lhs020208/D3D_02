@@ -191,6 +191,7 @@ void CTitleScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 	pCamera->UpdateShaderVariables(pd3dCommandList);
 
 	if (m_pTitleObjects) m_pTitleObjects->Render(pd3dCommandList, pCamera);
+	//if (m_pPlayer) m_pPlayer->Render(pd3dCommandList, pCamera);
 }
 
 void CTitleScene::Animate(float fElapsedTime)

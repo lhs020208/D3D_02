@@ -210,6 +210,8 @@ void CCamera::GenerateViewMatrix(XMFLOAT3 xmf3Position, XMFLOAT3 xmf3LookAt, XMF
 
 void CCamera::GenerateViewMatrix()
 {
+	if (Vector3::Equal(m_xmf3Position, m_xmf3LookAtWorld, 0.0001f))
+		m_xmf3LookAtWorld.z += 0.01f;
 	m_xmf4x4View = Matrix4x4::LookAtLH(m_xmf3Position, m_xmf3LookAtWorld, m_xmf3Up);
 }
 
@@ -284,44 +286,86 @@ void CThirdPersonCamera::Update(XMFLOAT3& xmf3LookAt, float fTimeElapsed)
 {
 	if (m_pPlayer)
 	{
-		XMFLOAT4X4 xmf4x4Rotate = Matrix4x4::Identity();
-		XMFLOAT3 xmf3Right = m_pPlayer->GetRightVector();
-		XMFLOAT3 xmf3Up = m_pPlayer->GetUpVector();
-		XMFLOAT3 xmf3Look = m_pPlayer->GetLookVector();
-		xmf4x4Rotate._11 = xmf3Right.x; xmf4x4Rotate._21 = xmf3Up.x; xmf4x4Rotate._31 = xmf3Look.x;
-		xmf4x4Rotate._12 = xmf3Right.y; xmf4x4Rotate._22 = xmf3Up.y; xmf4x4Rotate._32 = xmf3Look.y;
-		xmf4x4Rotate._13 = xmf3Right.z; xmf4x4Rotate._23 = xmf3Up.z; xmf4x4Rotate._33 = xmf3Look.z;
+		XMVECTOR up = XMVector3Normalize(XMLoadFloat3(&m_pPlayer->m_xmf3Up));
+		XMVECTOR look = XMVector3Normalize(XMLoadFloat3(&m_pPlayer->m_xmf3Look));
 
-		XMFLOAT3 xmf3Offset = Vector3::TransformCoord(m_xmf3Offset, xmf4x4Rotate);
-		XMFLOAT3 xmf3Position = Vector3::Add(m_pPlayer->GetPosition(), xmf3Offset);
-		XMFLOAT3 xmf3Direction = Vector3::Subtract(xmf3Position, m_xmf3Position);
-		float fLength = Vector3::Length(xmf3Direction);
-		xmf3Direction = Vector3::Normalize(xmf3Direction);
-		float fTimeLagScale = (m_fTimeLag) ? fTimeElapsed * (1.0f / m_fTimeLag) : 1.0f;
-		float fDistance = fLength * fTimeLagScale;
-		if (fDistance > fLength) fDistance = fLength;
-		if (fLength < 0.01f) fDistance = fLength;
-		if (fDistance > 0)
-		{
-			m_xmf3Position = Vector3::Add(m_xmf3Position, xmf3Direction, fDistance);
-			SetLookAt(xmf3LookAt);
-		}
+		// 2. Right = Up x Look
+		XMVECTOR right = XMVector3Normalize(XMVector3Cross(up, look));
+
+		// 3. Look 재정렬 = Right x Up
+		look = XMVector3Normalize(XMVector3Cross(right, up)); // 정직교 보정
+
+		// 4. 회전 행렬 구성
+		XMMATRIX mtxRotate;
+		mtxRotate.r[0] = right;
+		mtxRotate.r[1] = up;
+		mtxRotate.r[2] = look;
+		mtxRotate.r[3] = XMVectorSet(0, 0, 0, 1);
+
+		// 5. 카메라 위치 계산
+		XMFLOAT3 xmf3Offset = Vector3::TransformCoord(m_pPlayer->m_xmf3CameraOffset, mtxRotate);
+		XMFLOAT3 xmf3Position = Vector3::Add(m_pPlayer->m_xmf3Position, xmf3Offset);
+
+		// 6. 위치 적용
+		m_xmf3Position = xmf3Position;
+
+		// 7. LookAt 적용 (위치를 바라보게)
+		SetLookAt(m_pPlayer->m_xmf3Position, XMFLOAT3(0.0f, 1.0f, 0.0f));
+		
+		// 8. 뷰 행렬 갱신
+		GenerateViewMatrix();
 	}
 }
 
 void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt)
 {
+	XMVECTOR eye = XMLoadFloat3(&m_xmf3Position);
+	XMVECTOR at = XMLoadFloat3(&xmf3LookAt);
+	XMVECTOR dir = XMVectorSubtract(at, eye);
+
+	if (XMVector3Equal(dir, XMVectorZero()))
+	{
+		// 보정: eye와 at가 같을 때 작은 z 이동
+		xmf3LookAt.z += 0.01f;
+	}
+
 	XMFLOAT4X4 mtxLookAt = Matrix4x4::LookAtLH(m_xmf3Position, xmf3LookAt, m_pPlayer->GetUpVector());
-	m_xmf3Right = XMFLOAT3(mtxLookAt._11, mtxLookAt._21, mtxLookAt._31);
-	m_xmf3Up = XMFLOAT3(mtxLookAt._12, mtxLookAt._22, mtxLookAt._32);
-	m_xmf3Look = XMFLOAT3(mtxLookAt._13, mtxLookAt._23, mtxLookAt._33);
+	m_xmf3Right = Vector3::Normalize(XMFLOAT3(mtxLookAt._11, mtxLookAt._21, mtxLookAt._31));
+	m_xmf3Up = Vector3::Normalize(XMFLOAT3(mtxLookAt._12, mtxLookAt._22, mtxLookAt._32));
+	m_xmf3Look = Vector3::Normalize(XMFLOAT3(mtxLookAt._13, mtxLookAt._23, mtxLookAt._33));
+}
+
+void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
+{
+	XMVECTOR eye = XMLoadFloat3(&m_xmf3Position);
+	XMVECTOR at = XMLoadFloat3(&xmf3LookAt);
+	XMVECTOR dir = XMVectorSubtract(at, eye);
+
+	if (XMVector3Equal(dir, XMVectorZero()))
+	{
+		// 보정: lookAt과 eye가 같으면 z축으로 0.01 이동
+		xmf3LookAt.z += 0.01f;
+		at = XMLoadFloat3(&xmf3LookAt);
+		dir = XMVectorSubtract(at, eye);
+	}
+
+	// 이후 LookAtLH 사용
+	XMFLOAT4X4 viewMatrix = Matrix4x4::LookAtLH(m_xmf3Position, xmf3LookAt, xmf3Up);
+	m_xmf3Right = Vector3::Normalize(XMFLOAT3(viewMatrix._11, viewMatrix._21, viewMatrix._31));
+	m_xmf3Up = Vector3::Normalize(XMFLOAT3(viewMatrix._12, viewMatrix._22, viewMatrix._32));
+	m_xmf3Look = Vector3::Normalize(XMFLOAT3(viewMatrix._13, viewMatrix._23, viewMatrix._33));
 }
 
 void CCamera::SetLookAt(XMFLOAT3& xmf3Position, XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
 {
+	// eye와 at가 같은 경우 보정
+	if (Vector3::Equal(xmf3Position, xmf3LookAt, 0.0001f))
+		xmf3LookAt.z += 0.01f; // Z 방향으로 보정
+	
+
 	m_xmf3Position = xmf3Position;
 	m_xmf4x4View = Matrix4x4::LookAtLH(m_xmf3Position, xmf3LookAt, xmf3Up);
 	m_xmf3Right = Vector3::Normalize(XMFLOAT3(m_xmf4x4View._11, m_xmf4x4View._21, m_xmf4x4View._31));
-	m_xmf3Up = XMFLOAT3(0.0f, 1.0f, 0.0f);
+	m_xmf3Up = Vector3::Normalize(XMFLOAT3(m_xmf4x4View._12, m_xmf4x4View._22, m_xmf4x4View._32));
 	m_xmf3Look = Vector3::Normalize(XMFLOAT3(m_xmf4x4View._13, m_xmf4x4View._23, m_xmf4x4View._33));
 }
