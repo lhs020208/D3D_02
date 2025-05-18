@@ -351,7 +351,7 @@ void CGameFramework::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPA
 			switch (wParam) 
             {
 				case VK_ESCAPE:
-					::PostQuitMessage(0);
+					//::PostQuitMessage(0);
                     break;
                 case VK_RETURN:
                     break;
@@ -429,6 +429,7 @@ void CGameFramework::BuildObjects()
 	m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
 
 	m_pScene = new CTitleScene();
+	//m_pScene = new CMenuScene();
 	m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
 	auto pRootSignature = m_pScene->GetGraphicsRootSignature();
 
@@ -639,6 +640,7 @@ void CGameFramework::FrameAdvance()
 
 void CGameFramework::ChangeScene(int newSceneNumber)
 {
+	OutputDebugString(L"msg");
 	extern int Scene_number;
 	if (m_pScene) {
 		m_pScene->ReleaseObjects();
@@ -648,7 +650,6 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 	
 	Scene_number = newSceneNumber;
 	//CTankMesh* pTankMesh = new CTankMesh("Tank.obj");
-	//CCubeMesh* pCubeMesh = new CCubeMesh(0.1f, 0.1f, 0.1f);
 	CCamera* pCamera = new CCamera();
 
 	m_pCamera->SetViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f);
@@ -658,27 +659,47 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 
 	switch (Scene_number) {
 	case 0:
-		m_pScene = new CTitleScene(m_pPlayer);
+	{
+		m_pScene = new CTitleScene();
+		m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
+		auto pRootSignature = m_pScene->GetGraphicsRootSignature();
+
 		m_pPlayer->reset();
 		m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
 		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.0f, -1.0f));
+		m_pScene->SetPlayer(m_pPlayer);
 		break;
+	}
 	case 1:
-		m_pScene = new CMenuScene(m_pPlayer);
+	{
+		m_pScene = new CMenuScene();
+		m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
+		auto pRootSignature = m_pScene->GetGraphicsRootSignature();
+
 		m_pPlayer->reset();
 		m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
 		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.0f, -1.0f));
+		m_pScene->SetPlayer(m_pPlayer);
 		break;
-		/*
+	}
+	/*
 	case 2:
+	{
+		m_pScene = new CRollerCoasterScene();
+		m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
+		auto pRootSignature = m_pScene->GetGraphicsRootSignature();
+
 		XMFLOAT3 start_pos = RollerCoasterPos(0.0f);
-		m_pPlayer = new CCubePlayer;
-		m_pPlayer->SetMesh(pCubeMesh);
+		CCubePlayer* pCubePlayer = new CCubePlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
+		m_pPlayer = pCubePlayer;
+
+		m_pPlayer->reset();
 		m_pPlayer->SetPosition(start_pos.x, start_pos.y, start_pos.z);
 		m_pPlayer->SetCamera(pCamera);
-		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.1f, -2.0f));
-		m_pScene = new CRollerCoasterScene(m_pPlayer);
+		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.1f, -5.0f));
+		m_pScene->SetPlayer(m_pPlayer);
 		break;
+	}
 	case 3:
 		m_pPlayer = new CTankPlayer;
 		m_pPlayer->SetMesh(pTankMesh);

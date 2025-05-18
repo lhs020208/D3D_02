@@ -106,7 +106,6 @@ ID3D12RootSignature *CScene::CreateGraphicsRootSignature(ID3D12Device *pd3dDevic
 void CScene::ReleaseObjects()
 {
 	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
-
 	if (m_ppObjects)
 	{
 		for (int j = 0; j < m_nObjects; j++) if (m_ppObjects[j]) delete m_ppObjects[j];
@@ -287,9 +286,7 @@ void CMenuScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLis
 			m_pCubeObjects[i]->SetMesh(pCubeMesh);
 			break;
 		}
-
 		}
-
 
 		m_pCubeObjects[i]->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
 		m_pCubeObjects[i]->SetShader(pShader);
@@ -322,6 +319,7 @@ void CMenuScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCa
 	pCamera->SetViewportsAndScissorRects(pd3dCommandList);
 	pCamera->UpdateShaderVariables(pd3dCommandList);
 
+	if (m_pPlayer) m_pPlayer->Render(pd3dCommandList, pCamera);
 	for (int i = 0; i < m_nCubeObjects; i++) {
 		if (m_pCubeObjects[i]) m_pCubeObjects[i]->Render(pd3dCommandList, pCamera);
 	}

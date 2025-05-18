@@ -292,34 +292,46 @@ void CThirdPersonCamera::Update(XMFLOAT3& xmf3LookAt, float fTimeElapsed)
 {
 	if (m_pPlayer)
 	{
-		XMVECTOR up = XMVector3Normalize(XMLoadFloat3(&m_pPlayer->m_xmf3Up));
-		XMVECTOR look = XMVector3Normalize(XMLoadFloat3(&m_pPlayer->m_xmf3Look));
+		if (m_pPlayer->overview == false) {
+			XMVECTOR up = XMVector3Normalize(XMLoadFloat3(&m_pPlayer->m_xmf3Up));
+			XMVECTOR look = XMVector3Normalize(XMLoadFloat3(&m_pPlayer->m_xmf3Look));
 
-		// 2. Right = Up x Look
-		XMVECTOR right = XMVector3Normalize(XMVector3Cross(up, look));
+			// 2. Right = Up x Look
+			XMVECTOR right = XMVector3Normalize(XMVector3Cross(up, look));
 
-		// 3. Look 재정렬 = Right x Up
-		look = XMVector3Normalize(XMVector3Cross(right, up)); // 정직교 보정
+			// 3. Look 재정렬 = Right x Up
+			look = XMVector3Normalize(XMVector3Cross(right, up)); // 정직교 보정
 
-		// 4. 회전 행렬 구성
-		XMMATRIX mtxRotate;
-		mtxRotate.r[0] = right;
-		mtxRotate.r[1] = up;
-		mtxRotate.r[2] = look;
-		mtxRotate.r[3] = XMVectorSet(0, 0, 0, 1);
+			// 4. 회전 행렬 구성
+			XMMATRIX mtxRotate;
+			mtxRotate.r[0] = right;
+			mtxRotate.r[1] = up;
+			mtxRotate.r[2] = look;
+			mtxRotate.r[3] = XMVectorSet(0, 0, 0, 1);
 
-		// 5. 카메라 위치 계산
-		XMFLOAT3 xmf3Offset = Vector3::TransformCoord(m_pPlayer->m_xmf3CameraOffset, mtxRotate);
-		XMFLOAT3 xmf3Position = Vector3::Add(m_pPlayer->m_xmf3Position, xmf3Offset);
+			// 5. 카메라 위치 계산
+			XMFLOAT3 xmf3Offset = Vector3::TransformCoord(m_pPlayer->m_xmf3CameraOffset, mtxRotate);
+			XMFLOAT3 xmf3Position = Vector3::Add(m_pPlayer->m_xmf3Position, xmf3Offset);
 
-		// 6. 위치 적용
-		m_xmf3Position = xmf3Position;
+			// 6. 위치 적용
+			m_xmf3Position = xmf3Position;
 
-		// 7. LookAt 적용 (위치를 바라보게)
-		SetLookAt(m_pPlayer->m_xmf3Position, XMFLOAT3(0.0f, 1.0f, 0.0f));
-		
-		// 8. 뷰 행렬 갱신
-		GenerateViewMatrix();
+			// 7. LookAt 적용 (위치를 바라보게)
+			SetLookAt(m_pPlayer->m_xmf3Position, XMFLOAT3(0.0f, 1.0f, 0.0f));
+
+			// 8. 뷰 행렬 갱신
+			GenerateViewMatrix();
+		}
+		else
+		{
+			m_xmf3Position = XMFLOAT3(-30.0f, 10.0f, 30.0f);
+
+			XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
+
+			SetLookAt(m_xmf3Position, target);
+
+			GenerateViewMatrix();
+		}
 	}
 }
 

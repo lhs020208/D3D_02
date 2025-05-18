@@ -42,7 +42,7 @@ protected:
 
 class CTitleScene : public CScene {
 public:
-	CTitleScene::CTitleScene() {}
+	CTitleScene() {}
 	CTitleScene(CPlayer* pPlayer);
 	virtual void BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList) override;
 	virtual void ReleaseObjects() override;
@@ -57,6 +57,7 @@ private:
 
 class CMenuScene : public CScene {
 public:
+	CMenuScene() {}
 	CMenuScene(CPlayer* pPlayer);
 	virtual void BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList) override;
 	virtual void ReleaseObjects() override;

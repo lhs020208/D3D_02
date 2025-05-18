@@ -65,13 +65,6 @@ public:
 
 };
 
-class CUfoObject : public CGameObject
-{
-public:
-	CUfoObject();
-	virtual ~CUfoObject();
-};
-
 class CCubeObject : public CGameObject
 {
 public:

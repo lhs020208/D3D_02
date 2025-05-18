@@ -91,6 +91,7 @@ void CGameObject::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pC
 void CGameObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
 {
 	if (!pMesh) return;
+	OnPrepareRender();
 
 	// 1. 셰이더 상수 버퍼에 월드 변환 행렬 설정
 	if (m_pShader) m_pShader->Render(pd3dCommandList, pCamera); // PSO + RootSignature 설정
@@ -232,18 +233,6 @@ void CGameObject::GenerateRayForPicking(XMVECTOR& xmvPickPosition, XMMATRIX& xmm
 	xmvPickRayDirection = XMVector3Normalize(xmvPickRayDirection - xmvPickRayOrigin);
 }
 
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-CUfoObject::CUfoObject()
-{
-
-}
-
-CUfoObject::~CUfoObject()
-{
-
-}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CCubeObject::CCubeObject()
@@ -348,3 +337,4 @@ void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsComm
 		XMStoreFloat3(&m_pxmf3SphereVectors[i], RandomUnitVectorOnSphere());
 	}
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
