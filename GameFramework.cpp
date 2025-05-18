@@ -595,6 +595,11 @@ void CGameFramework::FrameAdvance()
 	UpdateShaderVariables();
 	if (m_pScene) m_pScene->Render(m_pd3dCommandList, m_pCamera);
 
+	if (m_bPendingSceneChange) {
+		ChangeScene(m_nPendingSceneNumber);
+		m_bPendingSceneChange = false;
+	}
+
 #ifdef _WITH_PLAYER_TOP
 	m_pd3dCommandList->ClearDepthStencilView(d3dDsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
 #endif
@@ -640,17 +645,16 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 		delete m_pScene;
 		m_pScene = nullptr;
 	}
-	/*
+	
 	Scene_number = newSceneNumber;
-	CTankMesh* pTankMesh = new CTankMesh("Tank.obj");
-	CCubeMesh* pCubeMesh = new CCubeMesh(0.1f, 0.1f, 0.1f);
+	//CTankMesh* pTankMesh = new CTankMesh("Tank.obj");
+	//CCubeMesh* pCubeMesh = new CCubeMesh(0.1f, 0.1f, 0.1f);
 	CCamera* pCamera = new CCamera();
 
-	pCamera->SetViewport(0, 0, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
-	pCamera->GeneratePerspectiveProjectionMatrix(1.0f, 1000.0f, 60.0f);
-	pCamera->SetFOVAngle(60.0f);
+	m_pCamera->SetViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f);
+	m_pCamera->GenerateProjectionMatrix(1.0f, 1000.0f, ASPECT_RATIO, 60.0f);
 
-	pCamera->GenerateOrthographicProjectionMatrix(1.01f, 50.0f, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT);
+	pCamera->GenerateOrthographicProjectionMatrix(1.01f, 50.0f, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT);
 
 	switch (Scene_number) {
 	case 0:
@@ -665,6 +669,7 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 		m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
 		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.0f, -1.0f));
 		break;
+		/*
 	case 2:
 		XMFLOAT3 start_pos = RollerCoasterPos(0.0f);
 		m_pPlayer = new CCubePlayer;
@@ -701,10 +706,10 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 
 		m_pScene = new CTankScene(m_pPlayer);
 		break;
+		*/
 	}
-	m_pPlayer->overview = false;
-	m_pScene->BuildObjects();
-	*/
+	//m_pPlayer->overview = false;
+	m_pScene->BuildObjects(m_pd3dDevice, m_pd3dCommandList);
 }
 
 void CGameFramework::RequestSceneChange(int sceneNumber) {

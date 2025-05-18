@@ -59,6 +59,7 @@ public:
 	void Rotate(float x, float y, float z);
 
 	void Update(float fTimeElapsed);
+	void reset();
 
 	virtual void OnPlayerUpdateCallback(float fTimeElapsed) { }
 	void SetPlayerUpdatedContext(LPVOID pContext) { m_pPlayerUpdatedContext = pContext; }

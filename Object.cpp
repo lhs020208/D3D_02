@@ -340,7 +340,7 @@ void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsComm
 		m_ppExplosionCubes[i] = new CCubeObject();
 		m_ppExplosionCubes[i]->SetMesh(new CCubeMesh(pd3dDevice, pd3dCommandList, 0.1f, 0.1f, 0.1f));
 		m_ppExplosionCubes[i]->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
-		m_ppExplosionCubes[i]->SetPosition(0.0f, 0.0f, 5.0f);
+		m_ppExplosionCubes[i]->SetPosition(0.0f, 0.0f, 1.0f);
 		m_ppExplosionCubes[i]->SetShader(m_pShader);
 		m_ppExplosionCubes[i]->CreateShaderVariables(pd3dDevice, pd3dCommandList);
 		m_ppExplosionCubes[i]->UpdateShaderVariables(pd3dCommandList);

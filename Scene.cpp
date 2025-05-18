@@ -177,7 +177,7 @@ void CTitleScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLi
 	m_pTitleObjects->SetMesh(cTitleMesh);
 	m_pTitleObjects->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
 	m_pTitleObjects->SetShader(pShader);
-	m_pTitleObjects->SetPosition(0.0f, 0.0f, 5.0f);
+	m_pTitleObjects->SetPosition(0.0f, 0.0f, 1.0f);
 	m_pTitleObjects->UpdateBoundingBox();
 }
 void CTitleScene::ReleaseObjects()
@@ -239,4 +239,160 @@ void CTitleScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wP
 		}
 
 	}
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CMenuScene::CMenuScene(CPlayer* pPlayer) : CScene(pPlayer) {}
+void CMenuScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList)
+{
+	m_pd3dGraphicsRootSignature = CreateGraphicsRootSignature(pd3dDevice);
+
+	CPseudoLightingShader* pShader = new CPseudoLightingShader();
+	pShader->CreateShader(pd3dDevice, m_pd3dGraphicsRootSignature);
+	pShader->CreateShaderVariables(pd3dDevice, pd3dCommandList);
+
+	for (int i = 0; i < m_nCubeObjects; i++)
+	{
+		m_pCubeObjects[i] = nullptr;
+
+		m_pCubeObjects[i] = new CGameObject();
+		switch (i)
+		{
+		case 4:
+		{
+			CMesh* pCubeMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Tutorial.obj");
+			m_pCubeObjects[i]->SetMesh(pCubeMesh);
+			break;
+		}
+		case 3:
+		{
+			CMesh* pCubeMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Level-1.obj");
+			m_pCubeObjects[i]->SetMesh(pCubeMesh);
+			break;
+		}
+		case 2:
+		{
+			CMesh* pCubeMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Level-2.obj");
+			m_pCubeObjects[i]->SetMesh(pCubeMesh);
+			break;
+		}
+		case 1:
+		{
+			CMesh* pCubeMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Start.obj");
+			m_pCubeObjects[i]->SetMesh(pCubeMesh);
+			break;
+		}
+		case 0:
+		{
+			CMesh* pCubeMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/End.obj");
+			m_pCubeObjects[i]->SetMesh(pCubeMesh);
+			break;
+		}
+
+		}
+
+
+		m_pCubeObjects[i]->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
+		m_pCubeObjects[i]->SetShader(pShader);
+		m_pCubeObjects[i]->SetPosition(-0.8f, -0.58f + 0.35f * i, 1.0f);
+		m_pCubeObjects[i]->UpdateBoundingBox();
+
+		XMFLOAT3 cameraPos = m_pPlayer->GetCamera()->GetPosition();
+		XMFLOAT3 upVector = XMFLOAT3(0.0f, 1.0f, 0.0f);
+		m_pCubeObjects[i]->LookAt(cameraPos, upVector);
+
+		XMMATRIX rotationY = XMMatrixRotationY(XMConvertToRadians(180.0f));
+		XMMATRIX world = XMLoadFloat4x4(&m_pCubeObjects[i]->m_xmf4x4World);
+		world = XMMatrixMultiply(rotationY, world);
+		XMStoreFloat4x4(&m_pCubeObjects[i]->m_xmf4x4World, world);
+	}
+
+}
+void CMenuScene::ReleaseObjects()
+{
+	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
+	for (int i = 0; i < m_nCubeObjects; i++) {
+		if (m_pCubeObjects[i]) {
+			delete m_pCubeObjects[i];
+			m_pCubeObjects[i] = nullptr;
+		}
+	}
+}
+void CMenuScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	pCamera->SetViewportsAndScissorRects(pd3dCommandList);
+	pCamera->UpdateShaderVariables(pd3dCommandList);
+
+	for (int i = 0; i < m_nCubeObjects; i++) {
+		if (m_pCubeObjects[i]) m_pCubeObjects[i]->Render(pd3dCommandList, pCamera);
+	}
+}
+void CMenuScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	extern CGameFramework* g_pFramework;
+	switch (nMessageID)
+	{
+	case WM_LBUTTONDOWN:
+		int x = LOWORD(lParam);
+		int y = HIWORD(lParam);
+		CCamera* pCamera = m_pPlayer->GetCamera();  //¿©±â¼­ È®º¸
+		CGameObject* pPickedObject = PickObjectPointedByCursor(x, y, pCamera);
+
+		if (pPickedObject)
+		{
+			for (int i = 0; i < m_nCubeObjects; i++)
+			{
+				if (pPickedObject == m_pCubeObjects[i])
+				{
+					// ÀÎµ¦½ºº°·Î ºÐ±â
+					switch (i)
+					{
+					case 0:
+						OutputDebugString(L"Cube 0 Å¬¸¯µÊ\n"); // End
+						SendMessage(hWnd, WM_CLOSE, 0, 0);
+						break;
+					case 1:
+						OutputDebugString(L"Cube 1 Å¬¸¯µÊ\n"); //Start
+						g_pFramework->ChangeScene(2);
+						break;
+					case 2:
+						OutputDebugString(L"Cube 2 Å¬¸¯µÊ\n"); //L2
+						g_pFramework->ChangeScene(3);
+						break;
+					case 3:
+						OutputDebugString(L"Cube 3 Å¬¸¯µÊ\n"); //L1
+						g_pFramework->ChangeScene(2);
+						break;
+					case 4:
+						OutputDebugString(L"Cube 4 Å¬¸¯µÊ\n"); //Tutorial
+						break;
+					}
+					break;
+				}
+			}
+		}
+
+	}
+}
+CGameObject* CMenuScene::PickObjectPointedByCursor(int xClient, int yClient, CCamera* pCamera)
+{
+	XMFLOAT3 xmf3PickPosition;
+	xmf3PickPosition.x = (((2.0f * xClient) / (float)pCamera->m_d3dViewport.Width) - 1) / pCamera->m_xmf4x4Projection._11;
+	xmf3PickPosition.y = -(((2.0f * yClient) / (float)pCamera->m_d3dViewport.Height) - 1) / pCamera->m_xmf4x4Projection._22;
+	xmf3PickPosition.z = 1.0f;
+
+	XMVECTOR xmvPickPosition = XMLoadFloat3(&xmf3PickPosition);
+	XMMATRIX xmmtxView = XMLoadFloat4x4(&pCamera->m_xmf4x4View);
+
+	float fNearestHitDistance = FLT_MAX;
+	CGameObject* pNearestObject = NULL;
+	for (int i = 0; i < m_nCubeObjects; i++) {
+		if (m_pCubeObjects)
+		{
+			int hit = m_pCubeObjects[i]->PickObjectByRayIntersection(xmvPickPosition, xmmtxView, &fNearestHitDistance);
+			if (hit > 0) {
+				pNearestObject = m_pCubeObjects[i];
+			}
+		}
+	}
+	return(pNearestObject);
 }

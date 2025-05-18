@@ -82,6 +82,12 @@ void CCamera::GenerateProjectionMatrix(float fNearPlaneDistance, float fFarPlane
 #endif
 }
 
+void CCamera::GenerateOrthographicProjectionMatrix(float fNearPlaneDistance, float fFarPlaneDistance, float fWidth, float hHeight)
+{
+	XMMATRIX xmmtxProjection = XMMatrixOrthographicLH(fWidth, hHeight, fNearPlaneDistance, fFarPlaneDistance);
+	XMStoreFloat4x4(&m_xmf4x4OrthographicProject, xmmtxProjection);
+}
+
 void CCamera::CalculateFrustumPlanes()
 {
 #ifdef _WITH_DIERECTX_MATH_FRUSTUM
