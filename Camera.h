@@ -104,24 +104,6 @@ public:
 	bool IsInFrustum(BoundingOrientedBox& xmBoundingBox);
 };
 
-class CSpaceShipCamera : public CCamera
-{
-public:
-	CSpaceShipCamera(CCamera *pCamera);
-	virtual ~CSpaceShipCamera() { }
-
-	virtual void Rotate(float fPitch = 0.0f, float fYaw = 0.0f, float fRoll = 0.0f);
-};
-
-class CFirstPersonCamera : public CCamera
-{
-public:
-	CFirstPersonCamera(CCamera *pCamera);
-	virtual ~CFirstPersonCamera() { }
-
-	virtual void Rotate(float fPitch = 0.0f, float fYaw = 0.0f, float fRoll = 0.0f);
-};
-
 class CThirdPersonCamera : public CCamera
 {
 public:
