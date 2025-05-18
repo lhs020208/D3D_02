@@ -177,7 +177,7 @@ void CTitleScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLi
 	m_pTitleObjects->SetMesh(cTitleMesh);
 	m_pTitleObjects->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
 	m_pTitleObjects->SetShader(pShader);
-	m_pTitleObjects->SetPosition(0.0f, 0.0f, 1.0f);
+	m_pTitleObjects->SetPosition(0.0f, 0.0f, 5.0f);
 	m_pTitleObjects->UpdateBoundingBox();
 }
 void CTitleScene::ReleaseObjects()

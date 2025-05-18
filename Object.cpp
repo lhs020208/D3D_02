@@ -65,6 +65,13 @@ void CGameObject::UpdateShaderVariables(ID3D12GraphicsCommandList* pd3dCommandLi
 
 	pd3dCommandList->SetGraphicsRoot32BitConstants(1, 3, &m_xmf3Color, 16);
 }
+void CGameObject::UpdateShaderVariables(ID3D12GraphicsCommandList* pd3dCommandList, XMFLOAT4X4* pxmf4x4World)
+{
+	XMFLOAT4X4 xmf4x4World;
+	XMStoreFloat4x4(&xmf4x4World, XMMatrixTranspose(XMLoadFloat4x4(pxmf4x4World)));
+	pd3dCommandList->SetGraphicsRoot32BitConstants(1, 16, &xmf4x4World, 0);
+	pd3dCommandList->SetGraphicsRoot32BitConstants(1, 3, &m_xmf3Color, 16);
+}
 
 void CGameObject::ReleaseShaderVariables()
 {
@@ -89,7 +96,7 @@ void CGameObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 	if (m_pShader) m_pShader->Render(pd3dCommandList, pCamera); // PSO + RootSignature 설정
 
 	// 2. 월드 변환 행렬을 셰이더 상수로 업로드
-	UpdateShaderVariables(pd3dCommandList);
+	UpdateShaderVariables(pd3dCommandList, pxmf4x4World);
 
 	// 3. 메시 렌더링 (GPU draw call)
 	pMesh->Render(pd3dCommandList);
@@ -283,8 +290,8 @@ void CTitleObject::Animate(float fElapsedTime)
 			XMFLOAT3 direction = m_pxmf3SphereVectors[i];
 			XMFLOAT3 position = Vector3::Add(GetPosition(), Vector3::ScalarProduct(direction, m_fElapsedTimes * m_fExplosionSpeed));
 			XMFLOAT4X4 world = Matrix4x4::RotationAxis(direction, m_fElapsedTimes * XMConvertToRadians(m_fExplosionRotation));
-			world._41 = position.x; world._42 = position.y; world._43 = position.z;
-			m_pxmf4x4Transforms[i] = world;
+
+			m_ppExplosionCubes[i]->SetPosition(position);
 		}
 	}
 	else
@@ -298,9 +305,11 @@ void CTitleObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* p
 {
 	if (m_bBlowingUp)
 	{
+		//OutputDebugStringA("Blowing up rendering\n");
 		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+
 			if (pCamera->IsInFrustum(m_xmOOBB)) {
-				CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i], m_pExplosionMesh);
+				m_ppExplosionCubes[i]->Render(pd3dCommandList, pCamera);
 			}
 		}
 	}
@@ -322,15 +331,20 @@ void CTitleObject::Rotate(XMFLOAT3& xmf3RotationAxis, float fAngle)
 	m_xmf4x4World = Matrix4x4::Multiply(mtxRotate, m_xmf4x4World);
 }
 
-CMesh* CTitleObject::m_pExplosionMesh = NULL;
 void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList)
 {
 	m_bBlowingUp = true;
 	m_fElapsedTimes = 0.0f;
 
-	if (!m_pExplosionMesh) m_pExplosionMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 0.05f, 0.05f, 0.05f);
-
 	for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+		m_ppExplosionCubes[i] = new CCubeObject();
+		m_ppExplosionCubes[i]->SetMesh(new CCubeMesh(pd3dDevice, pd3dCommandList, 0.1f, 0.1f, 0.1f));
+		m_ppExplosionCubes[i]->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
+		m_ppExplosionCubes[i]->SetPosition(0.0f, 0.0f, 5.0f);
+		m_ppExplosionCubes[i]->SetShader(m_pShader);
+		m_ppExplosionCubes[i]->CreateShaderVariables(pd3dDevice, pd3dCommandList);
+		m_ppExplosionCubes[i]->UpdateShaderVariables(pd3dCommandList);
+		m_ppExplosionCubes[i]->UpdateBoundingBox();
 		XMStoreFloat3(&m_pxmf3SphereVectors[i], RandomUnitVectorOnSphere());
 	}
 }

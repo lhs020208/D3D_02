@@ -29,6 +29,7 @@ public:
 
 	virtual void CreateShaderVariables(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);
 	virtual void UpdateShaderVariables(ID3D12GraphicsCommandList* pd3dCommandList);
+	virtual void UpdateShaderVariables(ID3D12GraphicsCommandList* pd3dCommandList, XMFLOAT4X4* pxmf4x4World);
 	virtual void ReleaseShaderVariables();
 
 	virtual void Animate(float fTimeElapsed);
@@ -107,5 +108,5 @@ private:
 	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
 	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
 
-	static CMesh* m_pExplosionMesh;
+	CCubeObject* m_ppExplosionCubes[EXPLOSION_DEBRISES]{};
 };
