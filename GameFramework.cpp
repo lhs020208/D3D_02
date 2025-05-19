@@ -435,6 +435,8 @@ void CGameFramework::BuildObjects()
 
 	CCubePlayer* pCubePlayer = new CCubePlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
 	m_pPlayer = pCubePlayer;
+	CMesh* pCubeMesh = new CCubeMesh(m_pd3dDevice, m_pd3dCommandList, 1.0f, 1.0f, 1.0f);
+	m_pPlayer->SetMesh(pCubeMesh);
 	m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
 	m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.0f, -1.0f));
 	m_pCamera = m_pPlayer->GetCamera();
@@ -685,19 +687,13 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 	/*
 	case 2:
 	{
-		m_pScene = new CRollerCoasterScene();
-		m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
-		auto pRootSignature = m_pScene->GetGraphicsRootSignature();
-
 		XMFLOAT3 start_pos = RollerCoasterPos(0.0f);
-		CCubePlayer* pCubePlayer = new CCubePlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
-		m_pPlayer = pCubePlayer;
-
-		m_pPlayer->reset();
+		m_pPlayer = new CCubePlayer;
+		m_pPlayer->SetMesh(pCubeMesh);
 		m_pPlayer->SetPosition(start_pos.x, start_pos.y, start_pos.z);
 		m_pPlayer->SetCamera(pCamera);
-		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.1f, -5.0f));
-		m_pScene->SetPlayer(m_pPlayer);
+		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.1f, -2.0f));
+		m_pScene = new CRollerCoasterScene(m_pPlayer);
 		break;
 	}
 	case 3:

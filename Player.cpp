@@ -223,10 +223,6 @@ void CPlayer::reset()
 
 CCubePlayer::CCubePlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd3dCommandList, ID3D12RootSignature *pd3dGraphicsRootSignature)
 {
-	CMesh *pCubeMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 1.0f, 1.0f, 1.0f);
-
-	SetMesh(pCubeMesh);
-
 	m_pCamera = ChangeCamera(THIRD_PERSON_CAMERA, 0.0f);
 
 	SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
