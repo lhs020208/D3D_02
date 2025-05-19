@@ -328,7 +328,8 @@ void CThirdPersonCamera::Update(XMFLOAT3& xmf3LookAt, float fTimeElapsed)
 
 			XMFLOAT3 target = XMFLOAT3(0.0f, 0.0f, 0.0f);
 
-			SetLookAt(m_xmf3Position, target);
+			if (Vector3::Equal(m_xmf3Position, target, 0.0001f)) target.z += 0.01f;
+			SetLookAt(target);
 
 			GenerateViewMatrix();
 		}
@@ -356,19 +357,19 @@ void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt)
 void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
 {
 	XMVECTOR eye = XMLoadFloat3(&m_xmf3Position);
-	XMVECTOR at = XMLoadFloat3(&xmf3LookAt);
+	XMFLOAT3 xmf3LookAtCopy = xmf3LookAt;
+	XMVECTOR at = XMLoadFloat3(&xmf3LookAtCopy);
 	XMVECTOR dir = XMVectorSubtract(at, eye);
 
 	if (XMVector3Equal(dir, XMVectorZero()))
 	{
-		// 보정: lookAt과 eye가 같으면 z축으로 0.01 이동
-		xmf3LookAt.z += 0.01f;
-		at = XMLoadFloat3(&xmf3LookAt);
+		// 보정은 복사본에 적용
+		xmf3LookAtCopy.z += 0.01f;
+		at = XMLoadFloat3(&xmf3LookAtCopy);
 		dir = XMVectorSubtract(at, eye);
 	}
 
-	// 이후 LookAtLH 사용
-	XMFLOAT4X4 viewMatrix = Matrix4x4::LookAtLH(m_xmf3Position, xmf3LookAt, xmf3Up);
+	XMFLOAT4X4 viewMatrix = Matrix4x4::LookAtLH(m_xmf3Position, xmf3LookAtCopy, xmf3Up);
 	m_xmf3Right = Vector3::Normalize(XMFLOAT3(viewMatrix._11, viewMatrix._21, viewMatrix._31));
 	m_xmf3Up = Vector3::Normalize(XMFLOAT3(viewMatrix._12, viewMatrix._22, viewMatrix._32));
 	m_xmf3Look = Vector3::Normalize(XMFLOAT3(viewMatrix._13, viewMatrix._23, viewMatrix._33));
@@ -376,13 +377,14 @@ void CThirdPersonCamera::SetLookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
 
 void CCamera::SetLookAt(XMFLOAT3& xmf3Position, XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up)
 {
-	// eye와 at가 같은 경우 보정
-	if (Vector3::Equal(xmf3Position, xmf3LookAt, 0.0001f))
-		xmf3LookAt.z += 0.01f; // Z 방향으로 보정
-	
-
 	m_xmf3Position = xmf3Position;
-	m_xmf4x4View = Matrix4x4::LookAtLH(m_xmf3Position, xmf3LookAt, xmf3Up);
+	XMFLOAT3 lookAtCopy = xmf3LookAt;
+
+	if (Vector3::Equal(m_xmf3Position, lookAtCopy, 0.0001f))
+		lookAtCopy.z += 0.01f;
+	
+	m_xmf3Position = xmf3Position;
+	m_xmf4x4View = Matrix4x4::LookAtLH(m_xmf3Position, lookAtCopy, xmf3Up);
 	m_xmf3Right = Vector3::Normalize(XMFLOAT3(m_xmf4x4View._11, m_xmf4x4View._21, m_xmf4x4View._31));
 	m_xmf3Up = Vector3::Normalize(XMFLOAT3(m_xmf4x4View._12, m_xmf4x4View._22, m_xmf4x4View._32));
 	m_xmf3Look = Vector3::Normalize(XMFLOAT3(m_xmf4x4View._13, m_xmf4x4View._23, m_xmf4x4View._33));
