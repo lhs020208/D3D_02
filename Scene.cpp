@@ -179,6 +179,9 @@ void CTitleScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLi
 	m_pTitleObjects->SetPosition(0.0f, 0.0f, 1.0f);
 	m_pTitleObjects->UpdateBoundingBox();
 }
+void CTitleScene::ReleaseUploadBuffers() {
+	if (m_pTitleObjects) m_pTitleObjects->ReleaseUploadBuffers();
+}
 void CTitleScene::ReleaseObjects()
 {
 	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
@@ -287,7 +290,6 @@ void CMenuScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLis
 			break;
 		}
 		}
-
 		m_pCubeObjects[i]->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
 		m_pCubeObjects[i]->SetShader(pShader);
 		m_pCubeObjects[i]->SetPosition(-0.8f, -0.58f + 0.35f * i, 1.0f);
@@ -304,14 +306,18 @@ void CMenuScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLis
 	}
 
 }
+void CMenuScene::ReleaseUploadBuffers() {
+	for (int i = 0; i < m_nCubeObjects; i++) {
+		if (m_pCubeObjects[i]) m_pCubeObjects[i]->ReleaseUploadBuffers();
+	}
+}
+
 void CMenuScene::ReleaseObjects()
 {
 	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
 	for (int i = 0; i < m_nCubeObjects; i++) {
-		if (m_pCubeObjects[i]) {
+		if (m_pCubeObjects[i]) 
 			delete m_pCubeObjects[i];
-			m_pCubeObjects[i] = nullptr;
-		}
 	}
 }
 void CMenuScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
@@ -393,4 +399,121 @@ CGameObject* CMenuScene::PickObjectPointedByCursor(int xClient, int yClient, CCa
 		}
 	}
 	return(pNearestObject);
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CRollerCoasterScene::CRollerCoasterScene(CPlayer* pPlayer) : CScene(pPlayer) {}
+void CRollerCoasterScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList)
+{
+	m_pd3dGraphicsRootSignature = CreateGraphicsRootSignature(pd3dDevice);
+	CPseudoLightingShader* pShader = new CPseudoLightingShader();
+	pShader->CreateShader(pd3dDevice, m_pd3dGraphicsRootSignature);
+	pShader->CreateShaderVariables(pd3dDevice, pd3dCommandList);
+
+	m_ppObjects = new CGameObject * [m_nObjects];
+
+	for (int i = 0; i < m_nObjects; i++) {
+
+		CCubeMesh* pCubeMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, i);
+		m_ppObjects[i] = new CGameObject();
+		m_ppObjects[i]->SetMesh(pCubeMesh);
+		m_ppObjects[i]->SetColor(XMFLOAT3(0.0f, 1.0f, 0.0f));
+		m_ppObjects[i]->SetShader(pShader);
+		m_ppObjects[i]->SetPosition(0.0f, 0.0f, 0.0f);
+		m_ppObjects[i]->UpdateBoundingBox();
+	}
+}
+void CRollerCoasterScene::ReleaseUploadBuffers() {
+	for (int i = 0; i < m_nObjects; i++) {
+		if (m_ppObjects[i]) m_ppObjects[i]->ReleaseUploadBuffers();
+	}
+}
+void CRollerCoasterScene::ReleaseObjects()
+{
+
+	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
+	for (int i = 0; i < m_nObjects; i++) {
+		if (m_ppObjects[i]) delete m_ppObjects[i];
+	}
+	delete[] m_ppObjects;
+}
+void CRollerCoasterScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) {
+	pCamera->SetViewportsAndScissorRects(pd3dCommandList);
+	pCamera->UpdateShaderVariables(pd3dCommandList);
+
+	if (m_pPlayer) m_pPlayer->Render(pd3dCommandList, pCamera);
+	for (int i = 0; i < m_nObjects; i++) {
+		m_ppObjects[i]->Render(pd3dCommandList, pCamera);
+	}
+}
+
+void CRollerCoasterScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	extern CGameFramework* g_pFramework;
+	switch (nMessageID)
+	{
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case 'o':
+		case 'O':
+			m_pPlayer->overview = true;
+			break;
+		case 'l':
+		case 'L':
+			m_pPlayer->overview = false;
+			XMFLOAT3 start_pos = RollerCoasterPos(timer);
+			m_pPlayer->reset();
+			m_pPlayer->SetPosition(start_pos.x, start_pos.y, start_pos.z);
+			m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.1f, -1.5f));
+			break;
+		case 'n':
+		case 'N':
+			g_pFramework->ChangeScene(3);
+			break;
+		case 'm':
+		case 'M':
+			XMFLOAT3 playerPos = m_pPlayer->GetPosition();
+			XMFLOAT3 objectPos = m_ppObjects[0]->GetPosition();
+
+			wchar_t msg[128];
+			swprintf_s(msg, 128, L"[DEBUG] Player Pos: (%.2f, %.2f, %.2f)\n", playerPos.x, playerPos.y, playerPos.z);
+			OutputDebugString(msg);
+
+			swprintf_s(msg, 128, L"[DEBUG] Object[0] Pos: (%.2f, %.2f, %.2f)\n", objectPos.x, objectPos.y, objectPos.z);
+			OutputDebugString(msg);
+			break;
+		case VK_ESCAPE:
+			g_pFramework->ChangeScene(1);
+			break;
+		case VK_SPACE:
+			move = true;
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void CRollerCoasterScene::Animate(float fElapsedTime)
+{
+	extern CGameFramework* g_pFramework;
+	if (move) {
+		m_pPlayer->SetPosition(RollerCoasterPos(timer).x, RollerCoasterPos(timer).y, RollerCoasterPos(timer).z);
+		timer += speed;
+		if (timer >= 0.71) {
+			speed = 0.01;
+		}
+		if (timer >= 1.42) {
+			speed = 0.005;
+		}
+	}
+	if (timer >= 15.14) {
+		move = false;
+		timer = 0.0;
+		speed = 0.002;
+		g_pFramework->ChangeScene(3);
+	}
 }

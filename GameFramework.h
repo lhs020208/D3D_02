@@ -26,6 +26,7 @@ public:
 	void ChangeSwapChainState();
 
     void BuildObjects();
+	void ReBuildObjects(int i);
     void ReleaseObjects();
 
     void ProcessInput();

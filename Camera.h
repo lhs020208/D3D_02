@@ -2,8 +2,6 @@
 
 #define ASPECT_RATIO				(float(FRAME_BUFFER_WIDTH) / float(FRAME_BUFFER_HEIGHT))
 
-#define FIRST_PERSON_CAMERA			0x01
-#define SPACESHIP_CAMERA			0x02
 #define THIRD_PERSON_CAMERA			0x03
 
 class CPlayer;

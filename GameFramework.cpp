@@ -428,8 +428,8 @@ void CGameFramework::BuildObjects()
 {
 	m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
 
-	m_pScene = new CTitleScene();
-	//m_pScene = new CMenuScene();
+	//m_pScene = new CTitleScene();
+	m_pScene = new CMenuScene();
 	m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
 	auto pRootSignature = m_pScene->GetGraphicsRootSignature();
 
@@ -640,18 +640,106 @@ void CGameFramework::FrameAdvance()
 	::SetWindowText(m_hWnd, m_pszFrameRate);
 }
 
+void CGameFramework::ReBuildObjects(int i)
+{
+	m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
+
+	switch (i)
+	{
+	case 0:
+		m_pScene = new CMenuScene();
+		break;
+	case 1:
+		m_pScene = new CTitleScene();
+		break;
+	case 2:
+		m_pScene = new CRollerCoasterScene();
+		break;
+	case 3:
+		//m_pScene = new CTankScene();
+		break;
+	}
+	m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
+	auto pRootSignature = m_pScene->GetGraphicsRootSignature();
+
+	CCubePlayer* pCubePlayer;
+	switch (i)
+	{
+	case 0:
+	case 1:
+	case 2:
+	{
+		pCubePlayer = new CCubePlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
+		m_pPlayer = pCubePlayer;
+		CMesh* pCubeMesh = new CCubeMesh(m_pd3dDevice, m_pd3dCommandList, 0.2f, 0.2f, 0.2f);
+		m_pPlayer->SetMesh(pCubeMesh);
+		break;
+	}
+	case 3:
+	{
+		//pCubePlayer = new CTankPlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
+		m_pPlayer = pCubePlayer;
+		//CMesh* pCubeMesh = new CTankMesh(m_pd3dDevice, m_pd3dCommandList);
+		//m_pPlayer->SetMesh(pCubeMesh);
+		break;
+	}
+	}
+	m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
+	if (Scene_number == 2) {
+		XMFLOAT3 start_pos = RollerCoasterPos(0.0f);
+		m_pPlayer->SetPosition(start_pos.x, start_pos.y, start_pos.z);
+	}
+	switch (i)
+	{
+	case 0:
+	case 1:
+		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.0f, -1.0f));
+		m_pCamera = m_pPlayer->GetCamera();
+		break;
+	case 2:
+		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.5f, -2.0f));
+		m_pCamera = m_pPlayer->GetCamera();
+		break;
+	case 3:
+		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.5f, -3.0f));
+		m_pCamera = m_pPlayer->GetCamera();
+		break;
+	}
+	m_pScene->SetPlayer(m_pPlayer);
+	if (m_pScene) m_pScene->BuildObjects(m_pd3dDevice, m_pd3dCommandList);
+
+	m_pd3dCommandList->Close();
+	ID3D12CommandList* ppd3dCommandLists[] = { m_pd3dCommandList };
+	m_pd3dCommandQueue->ExecuteCommandLists(1, ppd3dCommandLists);
+
+	WaitForGpuComplete();
+
+	if (m_pScene) m_pScene->ReleaseUploadBuffers();
+	if (m_pPlayer) m_pPlayer->ReleaseUploadBuffers();
+
+	m_GameTimer.Reset();
+}
+
 void CGameFramework::ChangeScene(int newSceneNumber)
 {
 	OutputDebugString(L"msg");
 	extern int Scene_number;
+
+	if (m_pPlayer) {
+		delete m_pPlayer;
+		m_pPlayer = nullptr;
+	}
 	if (m_pScene) {
 		m_pScene->ReleaseObjects();
 		delete m_pScene;
 		m_pScene = nullptr;
 	}
-	
+
 	Scene_number = newSceneNumber;
+	ReBuildObjects(Scene_number);
+	/*
 	//CTankMesh* pTankMesh = new CTankMesh("Tank.obj");
+	CCubeMesh* pCubeMesh = new CCubeMesh(m_pd3dDevice,m_pd3dCommandList,0.1f, 0.1f, 0.1f);
 	CCamera* pCamera = new CCamera();
 
 	m_pCamera->SetViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f);
@@ -684,17 +772,21 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 		m_pScene->SetPlayer(m_pPlayer);
 		break;
 	}
-	/*
+	
 	case 2:
 	{
+		m_pScene = new CRollerCoasterScene();
+		m_pScene->BuildGraphicsRootSignature(m_pd3dDevice);
+		auto pRootSignature = m_pScene->GetGraphicsRootSignature();
+
 		XMFLOAT3 start_pos = RollerCoasterPos(0.0f);
-		m_pPlayer = new CCubePlayer;
+		m_pPlayer->reset();
 		m_pPlayer->SetMesh(pCubeMesh);
 		m_pPlayer->SetPosition(start_pos.x, start_pos.y, start_pos.z);
 		m_pPlayer->SetCamera(pCamera);
 		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.1f, -2.0f));
-		m_pScene = new CRollerCoasterScene(m_pPlayer);
-		break;
+
+		m_pScene->SetPlayer(m_pPlayer);
 	}
 	case 3:
 		m_pPlayer = new CTankPlayer;
@@ -723,10 +815,10 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 
 		m_pScene = new CTankScene(m_pPlayer);
 		break;
-		*/
 	}
 	//m_pPlayer->overview = false;
 	m_pScene->BuildObjects(m_pd3dDevice, m_pd3dCommandList);
+	*/
 }
 
 void CGameFramework::RequestSceneChange(int sceneNumber) {
