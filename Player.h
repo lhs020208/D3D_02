@@ -10,6 +10,7 @@ public:
 	XMFLOAT3					m_xmf3Right;
 	XMFLOAT3					m_xmf3Up;
 	XMFLOAT3					m_xmf3Look;
+	XMFLOAT3					m_xmf3Color = XMFLOAT3(1.0f, 1.0f, 1.0f);
 
 	float           			m_fPitch;
 	float           			m_fYaw;

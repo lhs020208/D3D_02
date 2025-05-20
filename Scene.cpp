@@ -588,7 +588,7 @@ void CTankScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLis
 		m_pExplosionObjects[i] = new CExplosionObject();
 		m_pExplosionObjects[i]->SetMesh(pCubeMesh);
 		m_pExplosionObjects[i]->SetShader(pShader);
-		m_pExplosionObjects[i]->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
+		m_pExplosionObjects[i]->SetColor(XMFLOAT3(red, green, blue));
 		m_pExplosionObjects[i]->SetPosition(0.0f, 0.0f, 1.0f);
 		m_pExplosionObjects[i]->UpdateBoundingBox();
 	}
@@ -906,9 +906,9 @@ void CTankScene::Animate(float fElapsedTime)
 		if (m_pTank[i]) {
 			m_pTank[i]->Animate(fElapsedTime);
 			if (m_pTank[i]->IsBlowingUp()) {
-				for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
-					m_pExplosionObjects[i]->m_pxmf4x4Transforms[i] = m_pTank[i]->m_pxmf4x4Transforms[i];
-					m_pExplosionObjects[i]->m_pxmf3SphereVectors[i] = m_pTank[i]->m_pxmf3SphereVectors[i];
+				for (int j = 0; j < EXPLOSION_DEBRISES; j++) {
+					m_pExplosionObjects[i]->m_pxmf4x4Transforms[j] = m_pTank[i]->m_pxmf4x4Transforms[j];
+					m_pExplosionObjects[i]->m_pxmf3SphereVectors[j] = m_pTank[i]->m_pxmf3SphereVectors[j];
 				}
 			}
 		}
