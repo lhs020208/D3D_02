@@ -185,6 +185,10 @@ void CTitleScene::ReleaseUploadBuffers() {
 void CTitleScene::ReleaseObjects()
 {
 	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
+	if (m_pTitleObjects->m_pExplosionMesh) {
+		m_pTitleObjects->m_pExplosionMesh->Release();
+		m_pTitleObjects->m_pExplosionMesh = nullptr;
+	}
 	if (m_pTitleObjects) delete m_pTitleObjects;
 }
 void CTitleScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)

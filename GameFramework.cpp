@@ -428,8 +428,8 @@ void CGameFramework::BuildObjects()
 {
 	m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
 
-	//m_pScene = new CTitleScene();
-	m_pScene = new CMenuScene();
+	m_pScene = new CTitleScene();
+	//m_pScene = new CMenuScene();
 	m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
 	auto pRootSignature = m_pScene->GetGraphicsRootSignature();
 
@@ -599,6 +599,11 @@ void CGameFramework::FrameAdvance()
 	if (m_pScene) m_pScene->Render(m_pd3dCommandList, m_pCamera);
 
 	if (m_bPendingSceneChange) {
+		m_pd3dCommandList->Close();
+		ID3D12CommandList* ppd3dCommandLists[] = { m_pd3dCommandList };
+		m_pd3dCommandQueue->ExecuteCommandLists(1, ppd3dCommandLists);
+		WaitForGpuComplete();
+
 		ChangeScene(m_nPendingSceneNumber);
 		m_bPendingSceneChange = false;
 	}
@@ -722,7 +727,6 @@ void CGameFramework::ReBuildObjects(int i)
 
 void CGameFramework::ChangeScene(int newSceneNumber)
 {
-	OutputDebugString(L"msg");
 	extern int Scene_number;
 
 	if (m_pPlayer) {
@@ -737,88 +741,10 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 
 	Scene_number = newSceneNumber;
 	ReBuildObjects(Scene_number);
-	/*
-	//CTankMesh* pTankMesh = new CTankMesh("Tank.obj");
-	CCubeMesh* pCubeMesh = new CCubeMesh(m_pd3dDevice,m_pd3dCommandList,0.1f, 0.1f, 0.1f);
-	CCamera* pCamera = new CCamera();
 
-	m_pCamera->SetViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f);
-	m_pCamera->GenerateProjectionMatrix(1.0f, 1000.0f, ASPECT_RATIO, 60.0f);
-
-	pCamera->GenerateOrthographicProjectionMatrix(1.01f, 50.0f, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT);
-
-	switch (Scene_number) {
-	case 0:
-	{
-		m_pScene = new CTitleScene();
-		m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
-		auto pRootSignature = m_pScene->GetGraphicsRootSignature();
-
-		m_pPlayer->reset();
-		m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
-		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.0f, -1.0f));
-		m_pScene->SetPlayer(m_pPlayer);
-		break;
-	}
-	case 1:
-	{
-		m_pScene = new CMenuScene();
-		m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
-		auto pRootSignature = m_pScene->GetGraphicsRootSignature();
-
-		m_pPlayer->reset();
-		m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
-		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.0f, -1.0f));
-		m_pScene->SetPlayer(m_pPlayer);
-		break;
-	}
-	
-	case 2:
-	{
-		m_pScene = new CRollerCoasterScene();
-		m_pScene->BuildGraphicsRootSignature(m_pd3dDevice);
-		auto pRootSignature = m_pScene->GetGraphicsRootSignature();
-
-		XMFLOAT3 start_pos = RollerCoasterPos(0.0f);
-		m_pPlayer->reset();
-		m_pPlayer->SetMesh(pCubeMesh);
-		m_pPlayer->SetPosition(start_pos.x, start_pos.y, start_pos.z);
-		m_pPlayer->SetCamera(pCamera);
-		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.1f, -2.0f));
-
-		m_pScene->SetPlayer(m_pPlayer);
-	}
-	case 3:
-		m_pPlayer = new CTankPlayer;
-		m_pPlayer->SetMesh(pTankMesh);
-		m_pPlayer->reset();
-		m_pPlayer->SetPosition(0.0f, 0.0f, 0.0f);
-		m_pPlayer->SetCamera(pCamera);
-		m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.5f, -3.0f));
-		//m_pPlayer->SetCameraOffset(XMFLOAT3(0.0f, 0.0f, -0.1f));
-
-		CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
-		if (pTankPlayer) {
-			pTankPlayer->m_pShild = new CCubeObject();
-			CCubeMesh* pShildMesh = new CCubeMesh(0.6f, 0.6f, 0.6f);
-			pTankPlayer->m_pShild->SetMesh(pShildMesh);
-			pTankPlayer->m_pShild->SetColor(RGB(255, 0, 0));
-			pTankPlayer->m_pShild->SetPosition(0.0f, 0.0f, 0.0f);
-
-			pTankPlayer->m_pBullet = new CBulletObject();
-			CBulletMesh* pBulletMesh = new CBulletMesh("Bullet.obj");
-			pTankPlayer->m_pBullet->SetMesh(pBulletMesh);
-			pTankPlayer->m_pBullet->SetColor(RGB(255, 0, 0));
-			pTankPlayer->m_pBullet->SetPosition(0.0f, 0.0f, 0.0f);
-			pTankPlayer->m_pBullet->UpdateBoundingBox();
-		}
-
-		m_pScene = new CTankScene(m_pPlayer);
-		break;
-	}
-	//m_pPlayer->overview = false;
-	m_pScene->BuildObjects(m_pd3dDevice, m_pd3dCommandList);
-	*/
+	wchar_t buffer[128];
+	swprintf_s(buffer, L"[Scene] %d\n",Scene_number);
+	OutputDebugString(buffer);
 }
 
 void CGameFramework::RequestSceneChange(int sceneNumber) {

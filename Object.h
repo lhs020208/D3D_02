@@ -46,7 +46,7 @@ public:
 	void LookTo(XMFLOAT3& xmf3LookTo, XMFLOAT3& xmf3Up);
 	void LookAt(XMFLOAT3& xmf3LookAt, XMFLOAT3& xmf3Up);
 
-	void UpdateBoundingBox();
+	virtual void UpdateBoundingBox();
 
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3 xmf3Position);
@@ -85,13 +85,14 @@ public:
 	virtual void Animate(float fElapsedTime) override;
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
 	virtual void ReleaseUploadBuffers() override;
+	virtual void UpdateBoundingBox() override;
 
 	void Rotate(float fPitch = 0.0f, float fYaw = 10.0f, float fRoll = 0.0f);
 	void Rotate(XMFLOAT3& xmf3Axis, float fAngle);
 	void PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);
 	bool IsBlowingUp() { return m_bBlowingUp; }
 
-private:
+public:
 	bool m_bBlowingUp = false;
 	bool m_bPrevBlowingUp = false;
 	float m_fElapsedTimes = 0.0f;
@@ -102,7 +103,7 @@ private:
 	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
 	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
 
-	CCubeObject* m_ppExplosionCubes[EXPLOSION_DEBRISES]{};
+	static CMesh* m_pExplosionMesh;
 };
 
 class CTankObject : public CGameObject
@@ -113,7 +114,7 @@ public:
 
 	virtual void Animate(float fElapsedTime) override;
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
-	void PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);	//대기
+	//void PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);	//대기
 	bool IsBlowingUp() { return m_bBlowingUp; }
 	bool IsExist() { return is_exist; }
 	void SetExist(bool exist) { is_exist = exist; }
@@ -137,5 +138,5 @@ private:
 	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
 	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
 
-	static CMesh* m_pExplosionMesh;
+	CMesh* m_pExplosionMesh = nullptr;
 };

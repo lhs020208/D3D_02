@@ -158,7 +158,7 @@ void CPlayer::Update(float fTimeElapsed)
 	wchar_t buffer[128];
 	swprintf_s(buffer, L"[PLAYER POS] x: %.3f, y: %.3f, z: %.3f\n",
 		m_xmf3Position.x, m_xmf3Position.y, m_xmf3Position.z);
-	OutputDebugString(buffer);
+	//OutputDebugString(buffer);
 }
 
 CCamera *CPlayer::OnChangeCamera(DWORD nNewCameraMode, DWORD nCurrentCameraMode)

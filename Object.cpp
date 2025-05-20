@@ -90,17 +90,13 @@ void CGameObject::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pC
 
 void CGameObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
 {
-	if (!pMesh) return;
 	OnPrepareRender();
 
-	// 1. 셰이더 상수 버퍼에 월드 변환 행렬 설정
-	if (m_pShader) m_pShader->Render(pd3dCommandList, pCamera); // PSO + RootSignature 설정
+	if (m_pShader) m_pShader->Render(pd3dCommandList, pCamera);
 
-	// 2. 월드 변환 행렬을 셰이더 상수로 업로드
 	UpdateShaderVariables(pd3dCommandList, pxmf4x4World);
 
-	// 3. 메시 렌더링 (GPU draw call)
-	pMesh->Render(pd3dCommandList);
+	if (pMesh) pMesh->Render(pd3dCommandList);
 }
 
 void CGameObject::ReleaseUploadBuffers()
@@ -285,8 +281,8 @@ void CTitleObject::Animate(float fElapsedTime)
 			XMFLOAT3 direction = m_pxmf3SphereVectors[i];
 			XMFLOAT3 position = Vector3::Add(GetPosition(), Vector3::ScalarProduct(direction, m_fElapsedTimes * m_fExplosionSpeed));
 			XMFLOAT4X4 world = Matrix4x4::RotationAxis(direction, m_fElapsedTimes * XMConvertToRadians(m_fExplosionRotation));
-
-			m_ppExplosionCubes[i]->SetPosition(position);
+			world._41 = position.x; world._42 = position.y; world._43 = position.z;
+			m_pxmf4x4Transforms[i] = world;
 		}
 	}
 	else
@@ -301,12 +297,10 @@ void CTitleObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* p
 {
 	if (m_bBlowingUp)
 	{
-		//OutputDebugStringA("Blowing up rendering\n");
-		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
-
-			if (pCamera->IsInFrustum(m_xmOOBB)) {
-				m_ppExplosionCubes[i]->Render(pd3dCommandList, pCamera);
-			}
+		if (m_pExplosionMesh) {
+			XMFLOAT4X4 world = Matrix4x4::Identity();
+			world._41 = 0.0f; world._42 = 0.0f; world._43 = 2.0f;
+			CGameObject::Render(pd3dCommandList, pCamera, &world, m_pExplosionMesh);
 		}
 	}
 	else
@@ -327,20 +321,17 @@ void CTitleObject::Rotate(XMFLOAT3& xmf3RotationAxis, float fAngle)
 	m_xmf4x4World = Matrix4x4::Multiply(mtxRotate, m_xmf4x4World);
 }
 
+CMesh* CTitleObject::m_pExplosionMesh = NULL;
 void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList)
 {
 	m_bBlowingUp = true;
 	m_fElapsedTimes = 0.0f;
 
+	if (!m_pExplosionMesh) {
+		m_pExplosionMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 0.05f, 0.05f, 0.05f);
+	}
+
 	for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
-		m_ppExplosionCubes[i] = new CCubeObject();
-		m_ppExplosionCubes[i]->SetMesh(new CCubeMesh(pd3dDevice, pd3dCommandList, 0.1f, 0.1f, 0.1f));
-		m_ppExplosionCubes[i]->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
-		m_ppExplosionCubes[i]->SetPosition(0.0f, 0.0f, 1.0f);
-		m_ppExplosionCubes[i]->SetShader(m_pShader);
-		m_ppExplosionCubes[i]->CreateShaderVariables(pd3dDevice, pd3dCommandList);
-		m_ppExplosionCubes[i]->UpdateShaderVariables(pd3dCommandList);
-		m_ppExplosionCubes[i]->UpdateBoundingBox();
 		XMStoreFloat3(&m_pxmf3SphereVectors[i], RandomUnitVectorOnSphere());
 	}
 }
@@ -348,10 +339,23 @@ void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsComm
 void CTitleObject::ReleaseUploadBuffers()
 {
 	CGameObject::ReleaseUploadBuffers();
-	for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
-		if (m_ppExplosionCubes[i]) m_ppExplosionCubes[i]->ReleaseUploadBuffers();
+	if (m_pExplosionMesh) m_pExplosionMesh->ReleaseUploadBuffers();
+}
+
+void CTitleObject::UpdateBoundingBox()
+{
+	if (m_pMesh)
+	{
+		m_pMesh->m_xmOOBB.Transform(m_xmOOBB, XMLoadFloat4x4(&m_xmf4x4World));
+		XMStoreFloat4(&m_xmOOBB.Orientation, XMQuaternionNormalize(XMLoadFloat4(&m_xmOOBB.Orientation)));
+	}
+	if (m_pExplosionMesh)
+	{
+		m_pExplosionMesh->m_xmOOBB.Transform(m_xmOOBB, XMLoadFloat4x4(&m_xmf4x4World));
+		XMStoreFloat4(&m_xmOOBB.Orientation, XMQuaternionNormalize(XMLoadFloat4(&m_xmOOBB.Orientation)));
 	}
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CTankObject::Animate(float fElapsedTime)
 {
