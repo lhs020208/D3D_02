@@ -54,6 +54,7 @@ public:
 	virtual void OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam) override;
 private:
 	CTitleObject* m_pTitleObjects;
+	CExplosionObject* m_pExplosionObjects;
 };
 
 class CMenuScene : public CScene {

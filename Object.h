@@ -35,7 +35,7 @@ public:
 	virtual void Animate(float fTimeElapsed);
 	virtual void OnPrepareRender() { }
 	virtual void Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pCamera = NULL);
-	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh);
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World);
 	virtual void ReleaseUploadBuffers();
 
 	XMFLOAT3 GetPosition();
@@ -102,8 +102,16 @@ public:
 
 	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
 	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
+};
+class CExplosionObject : public CGameObject
+{
+public:
+	CExplosionObject() {}
+	virtual ~CExplosionObject() {}
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
 
-	static CMesh* m_pExplosionMesh;
+	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
+	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
 };
 
 class CTankObject : public CGameObject

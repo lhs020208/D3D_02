@@ -167,6 +167,7 @@ void CTitleScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLi
 {
 	m_pd3dGraphicsRootSignature = CreateGraphicsRootSignature(pd3dDevice);
 	CMesh* cTitleMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Title.obj");
+	CCubeMesh* pCubeMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 0.05f, 0.05f, 0.05f);
 
 	CPseudoLightingShader* pShader = new CPseudoLightingShader();
 	pShader->CreateShader(pd3dDevice, m_pd3dGraphicsRootSignature);
@@ -178,17 +179,22 @@ void CTitleScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLi
 	m_pTitleObjects->SetShader(pShader);
 	m_pTitleObjects->SetPosition(0.0f, 0.0f, 1.0f);
 	m_pTitleObjects->UpdateBoundingBox();
+
+	m_pExplosionObjects = new CExplosionObject();
+	m_pExplosionObjects->SetMesh(pCubeMesh);
+	m_pExplosionObjects->SetShader(pShader);
+	m_pExplosionObjects->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
+	m_pExplosionObjects->SetPosition(0.0f, 0.0f, 1.0f);
+	m_pExplosionObjects->UpdateBoundingBox();
 }
 void CTitleScene::ReleaseUploadBuffers() {
 	if (m_pTitleObjects) m_pTitleObjects->ReleaseUploadBuffers();
+	if (m_pExplosionObjects) m_pExplosionObjects->ReleaseUploadBuffers();
 }
 void CTitleScene::ReleaseObjects()
 {
 	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
-	if (m_pTitleObjects->m_pExplosionMesh) {
-		m_pTitleObjects->m_pExplosionMesh->Release();
-		m_pTitleObjects->m_pExplosionMesh = nullptr;
-	}
+	if (m_pExplosionObjects) delete m_pExplosionObjects;
 	if (m_pTitleObjects) delete m_pTitleObjects;
 }
 void CTitleScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
@@ -196,13 +202,27 @@ void CTitleScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 	pCamera->SetViewportsAndScissorRects(pd3dCommandList);
 	pCamera->UpdateShaderVariables(pd3dCommandList);
 
-	if (m_pTitleObjects) m_pTitleObjects->Render(pd3dCommandList, pCamera);
-	//if (m_pPlayer) m_pPlayer->Render(pd3dCommandList, pCamera);
+	if (m_pTitleObjects && m_pExplosionObjects) {
+		if (m_pTitleObjects->IsBlowingUp()) {
+			m_pExplosionObjects->Render(pd3dCommandList, pCamera);
+		}
+		else
+		m_pTitleObjects->Render(pd3dCommandList, pCamera);
+	}
 }
 
 void CTitleScene::Animate(float fElapsedTime)
 {
-	if (m_pTitleObjects) m_pTitleObjects->Animate(fElapsedTime);
+	if (m_pTitleObjects) {
+		m_pTitleObjects->Animate(fElapsedTime);
+		if (m_pTitleObjects->IsBlowingUp()) {
+			for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+				m_pExplosionObjects->m_pxmf4x4Transforms[i] = m_pTitleObjects->m_pxmf4x4Transforms[i];
+				m_pExplosionObjects->m_pxmf3SphereVectors[i] = m_pTitleObjects->m_pxmf3SphereVectors[i];
+			}
+		}
+	}
+
 }
 CGameObject* CTitleScene::PickObjectPointedByCursor(int xClient, int yClient, CCamera* pCamera)
 {

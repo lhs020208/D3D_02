@@ -88,7 +88,7 @@ void CGameObject::Render(ID3D12GraphicsCommandList *pd3dCommandList, CCamera *pC
 	if (m_pMesh) m_pMesh->Render(pd3dCommandList);
 }
 
-void CGameObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World, CMesh* pMesh)
+void CGameObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera, XMFLOAT4X4* pxmf4x4World)
 {
 	OnPrepareRender();
 
@@ -96,7 +96,7 @@ void CGameObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 
 	UpdateShaderVariables(pd3dCommandList, pxmf4x4World);
 
-	if (pMesh) pMesh->Render(pd3dCommandList);
+	if (m_pMesh) m_pMesh->Render(pd3dCommandList);
 }
 
 void CGameObject::ReleaseUploadBuffers()
@@ -250,6 +250,14 @@ void CCubeObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 {
 	CGameObject::Render(pd3dCommandList, pCamera);
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CExplosionObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+		CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i]);
+	}
+	
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 CTitleObject::CTitleObject()
 {
@@ -295,15 +303,7 @@ void CTitleObject::Animate(float fElapsedTime)
 
 void CTitleObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
 {
-	if (m_bBlowingUp)
-	{
-		if (m_pExplosionMesh) {
-			XMFLOAT4X4 world = Matrix4x4::Identity();
-			world._41 = 0.0f; world._42 = 0.0f; world._43 = 2.0f;
-			CGameObject::Render(pd3dCommandList, pCamera, &world, m_pExplosionMesh);
-		}
-	}
-	else
+	if (!m_bBlowingUp)
 	{
 		CGameObject::Render(pd3dCommandList, pCamera);
 	}
@@ -321,15 +321,10 @@ void CTitleObject::Rotate(XMFLOAT3& xmf3RotationAxis, float fAngle)
 	m_xmf4x4World = Matrix4x4::Multiply(mtxRotate, m_xmf4x4World);
 }
 
-CMesh* CTitleObject::m_pExplosionMesh = NULL;
 void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList)
 {
 	m_bBlowingUp = true;
 	m_fElapsedTimes = 0.0f;
-
-	if (!m_pExplosionMesh) {
-		m_pExplosionMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 0.05f, 0.05f, 0.05f);
-	}
 
 	for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
 		XMStoreFloat3(&m_pxmf3SphereVectors[i], RandomUnitVectorOnSphere());
@@ -339,7 +334,6 @@ void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsComm
 void CTitleObject::ReleaseUploadBuffers()
 {
 	CGameObject::ReleaseUploadBuffers();
-	if (m_pExplosionMesh) m_pExplosionMesh->ReleaseUploadBuffers();
 }
 
 void CTitleObject::UpdateBoundingBox()
@@ -347,11 +341,6 @@ void CTitleObject::UpdateBoundingBox()
 	if (m_pMesh)
 	{
 		m_pMesh->m_xmOOBB.Transform(m_xmOOBB, XMLoadFloat4x4(&m_xmf4x4World));
-		XMStoreFloat4(&m_xmOOBB.Orientation, XMQuaternionNormalize(XMLoadFloat4(&m_xmOOBB.Orientation)));
-	}
-	if (m_pExplosionMesh)
-	{
-		m_pExplosionMesh->m_xmOOBB.Transform(m_xmOOBB, XMLoadFloat4x4(&m_xmf4x4World));
 		XMStoreFloat4(&m_xmOOBB.Orientation, XMQuaternionNormalize(XMLoadFloat4(&m_xmOOBB.Orientation)));
 	}
 }
@@ -437,7 +426,7 @@ void CTankObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 			for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
 				if (pCamera->IsInFrustum(m_xmOOBB)) {
 					if (m_pxmf4x4Transforms[i]._42 > -0.2f) {
-						CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i], m_pExplosionMesh);
+						//CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i]);
 					}
 				}
 			}
