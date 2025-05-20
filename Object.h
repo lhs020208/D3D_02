@@ -89,7 +89,7 @@ public:
 
 	void Rotate(float fPitch = 0.0f, float fYaw = 10.0f, float fRoll = 0.0f);
 	void Rotate(XMFLOAT3& xmf3Axis, float fAngle);
-	void PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);
+	void PrepareExplosion();
 	bool IsBlowingUp() { return m_bBlowingUp; }
 	bool m_bSceneRequested = false;
 
@@ -123,7 +123,7 @@ public:
 
 	virtual void Animate(float fElapsedTime) override;
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
-	//void PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);	//´ë±â
+	void PrepareExplosion();
 	bool IsBlowingUp() { return m_bBlowingUp; }
 	bool IsExist() { return is_exist; }
 	void SetExist(bool exist) { is_exist = exist; }
@@ -131,6 +131,10 @@ public:
 	void SwitchShot() { shot = !shot; bullet_timer = 0; }
 	bool IsShot() { return shot; }
 
+	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
+	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
+
+	CMesh* m_pExplosionMesh = nullptr;
 	CGameObject* bullet;
 private:
 	bool is_exist = true;
@@ -144,8 +148,5 @@ private:
 	int bullet_timer = 0;
 	bool shot = false;
 
-	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
-	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
-
-	CMesh* m_pExplosionMesh = nullptr;
+	
 };

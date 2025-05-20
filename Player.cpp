@@ -275,6 +275,29 @@ CCamera * CCubePlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+CTankPlayer::CTankPlayer(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature)
+{
+	m_pCamera = ChangeCamera(THIRD_PERSON_CAMERA, 0.0f);
+
+	SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
+	SetColor(XMFLOAT3(0.0f, 0.25f, 0.875f));
+
+	CreateShaderVariables(pd3dDevice, pd3dCommandList);
+
+	CPseudoLightingShader* pShader = new CPseudoLightingShader();
+	pShader->CreateShader(pd3dDevice, pd3dGraphicsRootSignature);
+	pShader->CreateShaderVariables(pd3dDevice, pd3dCommandList);
+
+	SetShader(pShader);
+
+	m_pBullet = new CGameObject();
+	CMesh* pMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Bullet.obj");
+	m_pBullet->SetMesh(pMesh);
+	//m_pBullet->SetColor(XMFLOAT3(red, green, blue));
+	m_pBullet->SetPosition(GetPosition());
+	m_pBullet->SetShader(pShader);
+	m_pBullet->UpdateBoundingBox();
+}
 void CTankPlayer::OnPrepareRender()
 {
 	CPlayer::OnPrepareRender();
@@ -364,4 +387,32 @@ void CTankPlayer::Rotate(float fPitch, float fYaw, float fRoll)
 	m_pShild->SetRotationTransform(&rotationMatrix);
 
 	UpdateBoundingBox();
+}
+
+CCamera* CTankPlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
+{
+	DWORD nCurrentCameraMode = (m_pCamera) ? m_pCamera->GetMode() : 0x00;
+	if (nCurrentCameraMode == nNewCameraMode) return(m_pCamera);
+	switch (nNewCameraMode)
+	{
+	case THIRD_PERSON_CAMERA:
+		SetFriction(200.0f);
+		SetGravity(XMFLOAT3(0.0f, 0.0f, 0.0f));
+		SetMaxVelocityXZ(125.0f);
+		SetMaxVelocityY(400.0f);
+		m_pCamera = OnChangeCamera(THIRD_PERSON_CAMERA, nCurrentCameraMode);
+		m_pCamera->SetTimeLag(0.25f);
+		m_pCamera->SetOffset(XMFLOAT3(0.0f, 5.0f, -13.0f));
+		m_pCamera->GenerateProjectionMatrix(1.0f, 1000.0f, ASPECT_RATIO, 60.0f);
+		m_pCamera->SetViewport(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f);
+		m_pCamera->SetScissorRect(0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT);
+		break;
+	default:
+		break;
+	}
+
+	m_pCamera->SetPosition(Vector3::Add(m_xmf3Position, m_pCamera->GetOffset()));
+	Update(fTimeElapsed);
+
+	return(m_pCamera);
 }

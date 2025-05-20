@@ -260,7 +260,7 @@ void CTitleScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wP
 
 		if (pPickedObject) {
 			if (!m_pTitleObjects->IsBlowingUp()) {
-				m_pTitleObjects->PrepareExplosion(g_pFramework->GetDevice(), g_pFramework->GetCommandList());
+				m_pTitleObjects->PrepareExplosion();
 			}
 		}
 
@@ -446,7 +446,8 @@ void CRollerCoasterScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsC
 		m_ppObjects[i]->UpdateBoundingBox();
 	}
 }
-void CRollerCoasterScene::ReleaseUploadBuffers() {
+void CRollerCoasterScene::ReleaseUploadBuffers() 
+{
 	for (int i = 0; i < m_nObjects; i++) {
 		if (m_ppObjects[i]) m_ppObjects[i]->ReleaseUploadBuffers();
 	}
@@ -540,4 +541,385 @@ void CRollerCoasterScene::Animate(float fElapsedTime)
 		speed = 0.002;
 		g_pFramework->ChangeScene(3);
 	}
+}
+//ÅÊÅ© Scene////////////////////////////////////////////////////////////////////////////////////////////////
+CTankScene::CTankScene(CPlayer* pPlayer) : CScene(pPlayer) {}
+void CTankScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList)
+{
+	m_pd3dGraphicsRootSignature = CreateGraphicsRootSignature(pd3dDevice);
+	CPseudoLightingShader* pShader = new CPseudoLightingShader();
+	pShader->CreateShader(pd3dDevice, m_pd3dGraphicsRootSignature);
+	pShader->CreateShaderVariables(pd3dDevice, pd3dCommandList);
+
+	using namespace std;
+	default_random_engine dre{ random_device{}() };
+	uniform_real_distribution<float> uid{ 0.0f,1.0f };
+
+	uniform_real_distribution<float> uid_x{ 0,18.0f };
+	uniform_real_distribution<float> uid_z{ 0,18.0f };
+	uniform_int_distribution<int> uid_x_int(-9, 9);
+	uniform_int_distribution<int> uid_z_int(-9, 9);
+	uniform_real_distribution<float> uid_rot{ 0,360.0f };
+	for (int i = 0; i < m_nTanks; i++)
+	{
+		float red = uid(dre);
+		float green = uid(dre);
+		float blue = uid(dre);
+
+		m_pTank[i] = nullptr;
+		m_pTank[i] = new CTankObject();
+		CMesh* pTankMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Tank.obj");
+		m_pTank[i]->SetMesh(pTankMesh);
+		m_pTank[i]->SetShader(pShader);
+		m_pTank[i]->SetColor(XMFLOAT3(red, green, blue));
+		m_pTank[i]->SetPosition(uid_x(dre) - 9.0f, 0.0f, uid_z(dre) - 9.0f);
+		m_pTank[i]->Rotate(0.0f, uid_rot(dre), 0.0f);
+		m_pTank[i]->UpdateBoundingBox();
+
+		m_pTank[i]->bullet = new CGameObject();
+		CMesh* pMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/Bullet.obj");
+		m_pTank[i]->bullet->SetMesh(pMesh);
+		m_pTank[i]->bullet->SetColor(XMFLOAT3(red, green, blue));
+		m_pTank[i]->bullet->SetPosition(-2.0f + 0.5f * i, 0.0f, 1.0f);
+		m_pTank[i]->bullet->SetShader(pShader);
+		m_pTank[i]->bullet->UpdateBoundingBox();
+
+		CCubeMesh* pCubeMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 0.05f, 0.05f, 0.05f);
+		m_pExplosionObjects[i] = new CExplosionObject();
+		m_pExplosionObjects[i]->SetMesh(pCubeMesh);
+		m_pExplosionObjects[i]->SetShader(pShader);
+		m_pExplosionObjects[i]->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
+		m_pExplosionObjects[i]->SetPosition(0.0f, 0.0f, 1.0f);
+		m_pExplosionObjects[i]->UpdateBoundingBox();
+	}
+	for (int i = 0; i < m_nCubeObjects; i++) {
+		CCubeMesh* pCubeMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 1.0f, 1.0f, 1.0f);
+		m_pCubeObjects[i] = new CCubeObject();
+		m_pCubeObjects[i]->SetMesh(pCubeMesh);
+		m_pCubeObjects[i]->SetShader(pShader);
+		m_pCubeObjects[i]->SetColor(XMFLOAT3(0.0f, 0.0f, 1.0f));
+		m_pCubeObjects[i]->SetPosition((float)uid_x_int(dre), 0.3f, (float)uid_z_int(dre));
+		m_pCubeObjects[i]->UpdateBoundingBox();
+	}
+	CCubeMesh* pCubeMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 1.0f, 0.0f, 1.0f);
+	m_pFloorObject = new CCubeObject();
+	m_pFloorObject->SetMesh(pCubeMesh);
+	m_pFloorObject->SetShader(pShader);
+	m_pFloorObject->SetColor(XMFLOAT3(1.0f, 1.0f, 1.0f));
+	m_pFloorObject->SetPosition(0.0f, -0.2f, 0.0f);
+	m_pFloorObject->UpdateBoundingBox();
+
+	CMesh* cTitleMesh = new CMesh(pd3dDevice, pd3dCommandList, "Models/YouWin.obj");
+	m_pYWObjects = new CTitleObject();
+	m_pYWObjects->SetMesh(cTitleMesh);
+	m_pYWObjects->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
+	m_pYWObjects->SetShader(pShader);
+	m_pYWObjects->SetPosition(0.0f, 1.0f, 0.0f);
+	m_pYWObjects->UpdateBoundingBox();
+}
+
+void CTankScene::ReleaseObjects()
+{
+	if (m_pd3dGraphicsRootSignature) m_pd3dGraphicsRootSignature->Release();
+	if (m_pFloorObject) delete m_pFloorObject;
+	for (int i = 0; i < m_nTanks; i++) {
+		if (m_pTank[i]->bullet)delete m_pTank[i]->bullet;
+		if (m_pTank[i])delete m_pTank[i];
+		if (m_pExplosionObjects[i])delete m_pExplosionObjects[i];
+	}
+	for (int i = 0; i < m_nCubeObjects; i++)
+		if (m_pCubeObjects[i])delete m_pCubeObjects[i];
+	if (m_pYWObjects) delete m_pYWObjects;
+}
+void CTankScene::ReleaseUploadBuffers()
+{
+	if (m_pFloorObject) m_pFloorObject->ReleaseUploadBuffers();
+	for (int i = 0; i < m_nTanks; i++) {
+		if (m_pTank[i]->bullet) m_pTank[i]->bullet->ReleaseUploadBuffers();
+		if (m_pTank[i]) m_pTank[i]->ReleaseUploadBuffers();
+		if (m_pExplosionObjects[i]) m_pExplosionObjects[i]->ReleaseUploadBuffers();
+	}
+	for (int i = 0; i < m_nCubeObjects; i++) {
+		if (m_pCubeObjects[i]) m_pCubeObjects[i]->ReleaseUploadBuffers();
+	}
+	if (m_pYWObjects) m_pYWObjects->ReleaseUploadBuffers();
+}
+void CTankScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	pCamera->SetViewportsAndScissorRects(pd3dCommandList);
+	pCamera->UpdateShaderVariables(pd3dCommandList);
+
+	if (m_pPlayer) m_pPlayer->Render(pd3dCommandList, pCamera);
+	if (m_pFloorObject) {
+		for (int i = 0; i < 20; i++) {
+			for (int j = 0; j < 20; j++) {
+				m_pFloorObject->SetPosition(-10.0f + 1.0f * i, -0.2f, -10.0f + 1.0f * j);
+				m_pFloorObject->Render(pd3dCommandList, pCamera);
+			}
+		}
+	}
+	for (int i = 0; i < m_nTanks; i++) {
+		
+		if (m_pTank[i]->IsExist()) {
+			if (m_pTank[i]->IsBlowingUp()) {
+				m_pExplosionObjects[i]->Render(pd3dCommandList, pCamera);
+			}
+			else {
+				m_pTank[i]->Render(pd3dCommandList, pCamera);
+			}
+		}
+	}
+
+	for (int i = 0; i < m_nCubeObjects; i++) {
+		m_pCubeObjects[i]->Render(pd3dCommandList, pCamera);
+	}
+	if (m_pYWObjects && GameSet >= 10) m_pYWObjects->Render(pd3dCommandList, pCamera);
+}
+void CTankScene::OnProcessingKeyboardMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	extern CGameFramework* g_pFramework;
+	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
+	switch (nMessageID)
+	{
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case 'W':
+			if (m_pPlayer->move_z < 1)m_pPlayer->move_z += 1;
+			break;
+		case 'S':
+			if (m_pPlayer->move_z > -1)m_pPlayer->move_z -= 1;
+			break;
+		case 'A':
+			if (m_pPlayer->move_x > -1)m_pPlayer->move_x -= 1;
+			break;
+		case 'D':
+			if (m_pPlayer->move_x < 1)m_pPlayer->move_x += 1;
+			break;
+		case VK_SPACE:
+			for (int i = 0; i < 10; i++)
+				if (!m_pTank[i]->IsBlowingUp()) {
+					m_pTank[i]->PrepareExplosion();
+					GameSet++;
+				}
+			break;
+		case 'Q':
+			if (pTankPlayer) {
+				pTankPlayer->SwitchShild();
+			}
+			break;
+		case 'E':
+			if (pTankPlayer && !pTankPlayer->shot) {
+				pTankPlayer->SwitchBullet();
+				pTankPlayer->SetBulletPosition();
+			}
+			break;
+		case VK_ESCAPE:
+			g_pFramework->ChangeScene(1);
+			break;
+		case VK_RETURN:
+			if (pTankPlayer->Toggle) {
+				pTankPlayer->Toggle = false;
+				m_pFloorObject->SetColor(XMFLOAT3(1.0f, 1.0f, 1.0f));
+			}
+			else {
+				pTankPlayer->Toggle = true;
+				m_pFloorObject->SetColor(XMFLOAT3(1.0f, 0.0f, 0.0f));
+			}
+			break;
+		default:
+			break;
+		}
+		break;
+	case WM_KEYUP:
+		switch (wParam)
+		{
+		case 'W':
+			if (m_pPlayer->move_z > -1)m_pPlayer->move_z -= 1;
+			break;
+		case 'S':
+			if (m_pPlayer->move_z < 1)m_pPlayer->move_z += 1;
+			break;
+		case 'A':
+			if (m_pPlayer->move_x < 1)m_pPlayer->move_x += 1;
+			break;
+		case 'D':
+			if (m_pPlayer->move_x > -1)m_pPlayer->move_x -= 1;
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+}
+CGameObject* CTankScene::PickObjectPointedByCursor(int xClient, int yClient, CCamera* pCamera)
+{
+
+	XMFLOAT3 xmf3PickPosition;
+	xmf3PickPosition.x = (((2.0f * xClient) / (float)pCamera->m_d3dViewport.Width) - 1) / pCamera->m_xmf4x4Projection._11;
+	xmf3PickPosition.y = -(((2.0f * yClient) / (float)pCamera->m_d3dViewport.Height) - 1) / pCamera->m_xmf4x4Projection._22;
+	xmf3PickPosition.z = 1.0f;
+
+	XMVECTOR xmvPickPosition = XMLoadFloat3(&xmf3PickPosition);
+	XMMATRIX xmmtxView = XMLoadFloat4x4(&pCamera->m_xmf4x4View);
+
+	float fNearestHitDistance = FLT_MAX;
+	CGameObject* pNearestObject = NULL;
+	for (int i = 0; i < m_nTanks; i++) {
+		if (m_pTank[i])
+		{
+			int hit = m_pTank[i]->PickObjectByRayIntersection(xmvPickPosition, xmmtxView, &fNearestHitDistance);
+			if (hit > 0)
+			{
+				pNearestObject = m_pTank[i];
+			}
+		}
+	}
+	return(pNearestObject);
+
+}
+void CTankScene::OnProcessingMouseMessage(HWND hWnd, UINT nMessageID, WPARAM wParam, LPARAM lParam)
+{
+	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
+	switch (nMessageID)
+	{
+	case WM_RBUTTONDOWN:
+	{
+		if (pTankPlayer->Toggle) {
+
+			int x = LOWORD(lParam);
+			int y = HIWORD(lParam);
+			CCamera* pCamera = m_pPlayer->GetCamera();
+
+			CGameObject* pPickedObject = PickObjectPointedByCursor(x, y, pCamera);
+
+			if (pPickedObject) {
+				for (int i = 0; i < m_nTanks; i++) {
+					if (pPickedObject == m_pTank[i]) {
+						pTankPlayer->ToggleObject = m_pTank[i];
+					}
+				}
+			}
+
+			break;
+		}
+	}
+	}
+}
+void CTankScene::CheckTankByBulletCollisions()
+{
+	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
+	if (pTankPlayer && pTankPlayer->shot) {
+		for (int i = 0; i < 10; i++)
+		{
+			if (m_pTank[i]->IsExist())
+				if (m_pTank[i]->m_xmOOBB.Intersects(pTankPlayer->m_pBullet->m_xmOOBB))
+				{
+					if (!m_pTank[i]->IsBlowingUp()) {
+						m_pTank[i]->PrepareExplosion();
+						pTankPlayer->shot = false;
+						pTankPlayer->bullet_timer = 0;
+						pTankPlayer->ToggleObject = NULL;
+						GameSet++;
+					}
+				}
+		}
+	}
+}
+void CTankScene::CheckPlayerByBulletCollisions()
+{
+	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
+	if (pTankPlayer) {
+		for (int i = 0; i < m_nTanks; i++)
+		{
+			if (!pTankPlayer->OnShild) {
+				if (m_pTank[i]->IsExist() && m_pTank[i]->IsShot())
+					if (pTankPlayer->m_xmOOBB.Intersects(m_pTank[i]->bullet->m_xmOOBB))
+					{
+						XMFLOAT3 color = m_pTank[i]->m_xmf3Color;
+
+						pTankPlayer->SetColor(color);
+						pTankPlayer->m_pBullet->SetColor(color);
+						pTankPlayer->m_pShild->SetColor(color);
+
+						m_pTank[i]->SwitchShot();
+					}
+			}
+			else {
+				if (m_pTank[i]->IsExist() && m_pTank[i]->IsShot())
+					if (pTankPlayer->m_pShild->m_xmOOBB.Intersects(m_pTank[i]->bullet->m_xmOOBB))
+					{
+						m_pTank[i]->SwitchShot();
+					}
+			}
+		}
+	}
+}
+void CTankScene::CheckPlayerByObjectCollisions(float fElapsedTime)
+{
+	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
+	if (pTankPlayer) {
+		for (int i = 0; i < m_nCubeObjects; i++)
+		{
+			if (m_pCubeObjects[i])
+				if (pTankPlayer->m_xmOOBB.Intersects(m_pCubeObjects[i]->m_xmOOBB))
+				{
+					XMFLOAT3 look = m_pPlayer->GetLook();
+					XMFLOAT3 right = m_pPlayer->GetRight();
+					XMFLOAT3 now_pos = m_pPlayer->GetPosition();
+					XMFLOAT3 moveVec = { 0.0f, 0.0f, 0.0f };
+					float speed = fElapsedTime * 1.5f;
+
+					moveVec.z -= right.z * m_pPlayer->move_x * speed;
+					moveVec.z -= right.z * m_pPlayer->move_x * speed;
+
+					moveVec.x -= look.x * m_pPlayer->move_z * speed;
+					moveVec.z -= look.z * m_pPlayer->move_z * speed;
+
+					m_pPlayer->SetPosition(now_pos.x + moveVec.x, now_pos.y, now_pos.z + moveVec.z);
+				}
+		}
+	}
+}
+void CTankScene::CheckBulletByObjectCollisions()
+{
+	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
+	if (pTankPlayer) {
+		for (int i = 0; i < m_nCubeObjects; i++)
+		{
+			if (m_pCubeObjects[i] && pTankPlayer->shot)
+				if (pTankPlayer->m_pBullet->m_xmOOBB.Intersects(m_pCubeObjects[i]->m_xmOOBB))
+				{
+					pTankPlayer->shot = false;
+					pTankPlayer->bullet_timer = 0;
+					pTankPlayer->ToggleObject = NULL;
+				}
+		}
+	}
+}
+
+void CTankScene::Animate(float fElapsedTime)
+{
+	for (int i = 0; i < m_nTanks; i++) {
+		if (m_pTank[i]) {
+			m_pTank[i]->Animate(fElapsedTime);
+			if (m_pTank[i]->IsBlowingUp()) {
+				for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+					m_pExplosionObjects[i]->m_pxmf4x4Transforms[i] = m_pTank[i]->m_pxmf4x4Transforms[i];
+					m_pExplosionObjects[i]->m_pxmf3SphereVectors[i] = m_pTank[i]->m_pxmf3SphereVectors[i];
+				}
+			}
+		}
+	}
+
+	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
+	pTankPlayer->Animate(fElapsedTime);
+	if (m_pYWObjects && GameSet >= 10) m_pYWObjects->Animate(fElapsedTime);
+
+	CheckPlayerByObjectCollisions(fElapsedTime);
+	CheckBulletByObjectCollisions();
+	CheckTankByBulletCollisions();
+	CheckPlayerByBulletCollisions();
 }

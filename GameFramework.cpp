@@ -657,13 +657,14 @@ void CGameFramework::ReBuildObjects(int i)
 		m_pScene = new CRollerCoasterScene();
 		break;
 	case 3:
-		//m_pScene = new CTankScene();
+		m_pScene = new CTankScene();
 		break;
 	}
 	m_pScene->BuildGraphicsRootSignature(m_pd3dDevice); // 따로 분리한 함수
 	auto pRootSignature = m_pScene->GetGraphicsRootSignature();
 
 	CCubePlayer* pCubePlayer;
+	CTankPlayer* pTankPlayer;
 	switch (i)
 	{
 	case 0:
@@ -678,10 +679,10 @@ void CGameFramework::ReBuildObjects(int i)
 	}
 	case 3:
 	{
-		//pCubePlayer = new CTankPlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
-		m_pPlayer = pCubePlayer;
-		//CMesh* pCubeMesh = new CTankMesh(m_pd3dDevice, m_pd3dCommandList);
-		//m_pPlayer->SetMesh(pCubeMesh);
+		pTankPlayer = new CTankPlayer(m_pd3dDevice, m_pd3dCommandList, m_pScene->GetGraphicsRootSignature());
+		m_pPlayer = pTankPlayer;
+		CMesh* pCubeMesh = new CMesh(m_pd3dDevice, m_pd3dCommandList, "Models/Tank.obj");
+		m_pPlayer->SetMesh(pCubeMesh);
 		break;
 	}
 	}
@@ -724,6 +725,7 @@ void CGameFramework::ReBuildObjects(int i)
 void CGameFramework::ChangeScene(int newSceneNumber)
 {
 	extern int Scene_number;
+	wchar_t buffer[128];
 
 	if (m_pPlayer) {
 		delete m_pPlayer;
@@ -736,15 +738,18 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 	}
 
 	Scene_number = newSceneNumber;
+
+	swprintf_s(buffer, L"[변경 전] %d\n", Scene_number);
+	OutputDebugString(buffer);
+
 	ReBuildObjects(Scene_number);
 
-	wchar_t buffer[128];
-	swprintf_s(buffer, L"[Scene] %d\n",Scene_number);
+	
+	swprintf_s(buffer, L"[변경 완료] %d\n",Scene_number);
 	OutputDebugString(buffer);
 }
 
 void CGameFramework::RequestSceneChange(int sceneNumber) {
-	OutputDebugString(L"RequestSceneChange called\n");
 	m_bPendingSceneChange = true;
 	m_nPendingSceneNumber = sceneNumber;
 }

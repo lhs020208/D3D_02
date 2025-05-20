@@ -28,6 +28,8 @@ public:
 	CCamera						*m_pCamera = NULL;
 	bool						overview = false;
 
+	int							move_z = 0;
+	int							move_x = 0;
 public:
 	CPlayer();
 	virtual ~CPlayer();
@@ -93,12 +95,14 @@ class CTankPlayer : public CPlayer
 {
 public:
 	CTankPlayer() {}
+	CTankPlayer(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, ID3D12RootSignature* pd3dGraphicsRootSignature);
 	virtual ~CTankPlayer() {}
 
 	virtual void OnPrepareRender();
 	virtual void Animate(float fElapsedTime) override;
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
 	virtual void Rotate(float fPitch = 0.0f, float fYaw = 0.0f, float fRoll = 0.0f) override;
+	virtual CCamera* ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed);
 
 	bool OnShild = false;
 	void SwitchShild() { OnShild = !OnShild; }
@@ -112,7 +116,4 @@ public:
 
 	CTankObject* ToggleObject;
 	bool Toggle = false;
-
-	int move_z = 0;
-	int	move_x = 0;
 };

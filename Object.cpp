@@ -320,7 +320,7 @@ void CTitleObject::Rotate(XMFLOAT3& xmf3RotationAxis, float fAngle)
 	m_xmf4x4World = Matrix4x4::Multiply(mtxRotate, m_xmf4x4World);
 }
 
-void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList)
+void CTitleObject::PrepareExplosion()
 {
 	m_bBlowingUp = true;
 	m_fElapsedTimes = 0.0f;
@@ -420,21 +420,21 @@ void CTankObject::Animate(float fElapsedTime)
 void CTankObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
 {
 	if (IsExist()) {
-		if (m_bBlowingUp)
-		{
-			for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
-				if (pCamera->IsInFrustum(m_xmOOBB)) {
-					if (m_pxmf4x4Transforms[i]._42 > -0.2f) {
-						//CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i]);
-					}
-				}
-			}
-		}
-		else
+		if (!m_bBlowingUp)
 		{
 			CGameObject::Render(pd3dCommandList, pCamera);
 			if (shot)
 				bullet->Render(pd3dCommandList, pCamera);
 		}
+	}
+}
+
+void CTankObject::PrepareExplosion()
+{
+	m_bBlowingUp = true;
+	m_fElapsedTimes = 0.0f;
+
+	for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+		XMStoreFloat3(&m_pxmf3SphereVectors[i], RandomUnitVectorOnSphere());
 	}
 }
