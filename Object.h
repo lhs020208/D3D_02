@@ -84,6 +84,7 @@ public:
 
 	virtual void Animate(float fElapsedTime) override;
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
+	virtual void ReleaseUploadBuffers() override;
 
 	void Rotate(float fPitch = 0.0f, float fYaw = 10.0f, float fRoll = 0.0f);
 	void Rotate(XMFLOAT3& xmf3Axis, float fAngle);

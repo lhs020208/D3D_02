@@ -337,4 +337,12 @@ void CTitleObject::PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsComm
 		XMStoreFloat3(&m_pxmf3SphereVectors[i], RandomUnitVectorOnSphere());
 	}
 }
+
+void CTitleObject::ReleaseUploadBuffers()
+{
+	CGameObject::ReleaseUploadBuffers();
+	for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+		if (m_ppExplosionCubes[i]) m_ppExplosionCubes[i]->ReleaseUploadBuffers();
+	}
+}
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

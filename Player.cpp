@@ -154,6 +154,11 @@ void CPlayer::Update(float fTimeElapsed)
 	float fDeceleration = (m_fFriction * fTimeElapsed);
 	if (fDeceleration > fLength) fDeceleration = fLength;
 	m_xmf3Velocity = Vector3::Add(m_xmf3Velocity, Vector3::ScalarProduct(m_xmf3Velocity, -fDeceleration, true));
+
+	wchar_t buffer[128];
+	swprintf_s(buffer, L"[PLAYER POS] x: %.3f, y: %.3f, z: %.3f\n",
+		m_xmf3Position.x, m_xmf3Position.y, m_xmf3Position.z);
+	OutputDebugString(buffer);
 }
 
 CCamera *CPlayer::OnChangeCamera(DWORD nNewCameraMode, DWORD nCurrentCameraMode)
