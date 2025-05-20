@@ -50,6 +50,7 @@ public:
 
 	void SetPosition(float x, float y, float z);
 	void SetPosition(XMFLOAT3 xmf3Position);
+	void SetRotationTransform(XMFLOAT4X4* pmxf4x4Transform);
 
 	void SetColor(XMFLOAT3 xmf3Color) { m_xmf3Color = xmf3Color; }
 
@@ -57,12 +58,11 @@ public:
 	void MoveUp(float fDistance = 1.0f);
 	void MoveForward(float fDistance = 1.0f);
 
-	void Rotate(float fPitch = 10.0f, float fYaw = 10.0f, float fRoll = 10.0f);
-	void Rotate(XMFLOAT3 *pxmf3Axis, float fAngle);
+	virtual void Rotate(float fPitch = 0.0f, float fYaw = 0.0f, float fRoll = 0.0f);
+	virtual void Rotate(XMFLOAT3 *pxmf3Axis, float fAngle);
 
 	int PickObjectByRayIntersection(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, float* pfHitDistance);
 	void GenerateRayForPicking(XMVECTOR& xmvPickPosition, XMMATRIX& xmmtxView, XMVECTOR& xmvPickRayOrigin, XMVECTOR& xmvPickRayDirection);
-
 };
 
 class CCubeObject : public CGameObject
@@ -103,4 +103,39 @@ private:
 	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
 
 	CCubeObject* m_ppExplosionCubes[EXPLOSION_DEBRISES]{};
+};
+
+class CTankObject : public CGameObject
+{
+public:
+	CTankObject() {}
+	virtual ~CTankObject() {}
+
+	virtual void Animate(float fElapsedTime) override;
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
+	void PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);	//´ë±â
+	bool IsBlowingUp() { return m_bBlowingUp; }
+	bool IsExist() { return is_exist; }
+	void SetExist(bool exist) { is_exist = exist; }
+
+	void SwitchShot() { shot = !shot; bullet_timer = 0; }
+	bool IsShot() { return shot; }
+
+	CGameObject* bullet;
+private:
+	bool is_exist = true;
+	bool m_bBlowingUp = false;
+	bool m_bPrevBlowingUp = false;
+	float m_fElapsedTimes = 0.0f;
+	float m_fDuration = 2.0f;
+	float m_fExplosionSpeed = 2.0f;
+	float m_fExplosionRotation = 360.0f;
+	int timer = 0;
+	int bullet_timer = 0;
+	bool shot = false;
+
+	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
+	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
+
+	static CMesh* m_pExplosionMesh;
 };

@@ -246,11 +246,6 @@ CCubePlayer::~CCubePlayer()
 {
 }
 
-void CCubePlayer::OnPrepareRender()
-{
-	CPlayer::OnPrepareRender();
-}
-
 CCamera * CCubePlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 {
 	DWORD nCurrentCameraMode = (m_pCamera) ? m_pCamera->GetMode() : 0x00;
@@ -277,4 +272,96 @@ CCamera * CCubePlayer::ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed)
 	Update(fTimeElapsed);
 
 	return(m_pCamera);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CTankPlayer::OnPrepareRender()
+{
+	CPlayer::OnPrepareRender();
+	//m_xmf4x4World = Matrix4x4::Multiply(XMMatrixRotationRollPitchYaw(XMConvertToRadians(90.0f), 0.0f, 0.0f), m_xmf4x4World);
+}
+
+void CTankPlayer::Animate(float fElapsedTime)
+{
+	XMFLOAT3 look = GetLook();
+	XMFLOAT3 right = GetRight();
+
+	XMFLOAT3 moveVec = { 0.0f, 0.0f, 0.0f };
+
+	// 이동 거리 스케일
+	float speed = fElapsedTime * 0.5f;
+
+	// 방향별 적용
+	moveVec.x += right.x * move_x * speed;
+	moveVec.z += right.z * move_x * speed;
+
+	moveVec.x += look.x * move_z * speed;
+	moveVec.z += look.z * move_z * speed;
+
+	// 위치 갱신
+	XMFLOAT3 now_pos = GetPosition();
+	SetPosition(now_pos.x + moveVec.x, now_pos.y, now_pos.z + moveVec.z);
+
+	m_pShild->SetPosition(now_pos.x + moveVec.x, now_pos.y, now_pos.z + moveVec.z);
+
+	CTankPlayer::OnPrepareRender();
+
+
+	if (shot) {
+		bullet_timer++;
+		if (Toggle && ToggleObject) {
+			m_pBullet->LookAt(ToggleObject->GetPosition(), m_pBullet->GetUp());
+		}
+		m_pBullet->SetPosition(Vector3::Add(m_pBullet->GetPosition(), Vector3::ScalarProduct(m_pBullet->GetLook(), fElapsedTime * 2.0f, false)));
+		if (bullet_timer >= 200) {
+			bullet_timer = 0;
+			SwitchBullet();
+		}
+	}
+
+	UpdateBoundingBox();
+	m_pBullet->UpdateBoundingBox();
+	m_pShild->UpdateBoundingBox();
+}
+
+void CTankPlayer::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	CPlayer::Render(pd3dCommandList, pCamera);
+	if (OnShild && m_pShild) m_pShild->Render(pd3dCommandList, pCamera);
+	if (shot) m_pBullet->Render(pd3dCommandList, pCamera);
+}
+
+void CTankPlayer::SetBulletPosition()
+{
+	m_pBullet->SetPosition(GetPosition().x, GetPosition().y, GetPosition().z);
+
+	XMFLOAT3 right = GetRight();
+	XMFLOAT3 up = GetUp();
+	XMFLOAT3 look = GetLook();
+
+	XMFLOAT4X4 rotationMatrix;
+	rotationMatrix._11 = right.x; rotationMatrix._12 = right.y; rotationMatrix._13 = right.z; rotationMatrix._14 = 0.0f;
+	rotationMatrix._21 = up.x;    rotationMatrix._22 = up.y;    rotationMatrix._23 = up.z;    rotationMatrix._24 = 0.0f;
+	rotationMatrix._31 = look.x;  rotationMatrix._32 = look.y;  rotationMatrix._33 = look.z;  rotationMatrix._34 = 0.0f;
+	rotationMatrix._41 = 0.0f;    rotationMatrix._42 = 0.0f;    rotationMatrix._43 = 0.0f;    rotationMatrix._44 = 1.0f;
+
+	m_pBullet->SetRotationTransform(&rotationMatrix);
+}
+
+void CTankPlayer::Rotate(float fPitch, float fYaw, float fRoll)
+{
+	CPlayer::Rotate(fPitch, fYaw, fRoll);
+	XMFLOAT3 right = GetRight();
+	XMFLOAT3 up = GetUp();
+	XMFLOAT3 look = GetLook();
+
+	XMFLOAT4X4 rotationMatrix;
+	rotationMatrix._11 = right.x; rotationMatrix._12 = right.y; rotationMatrix._13 = right.z; rotationMatrix._14 = 0.0f;
+	rotationMatrix._21 = up.x;    rotationMatrix._22 = up.y;    rotationMatrix._23 = up.z;    rotationMatrix._24 = 0.0f;
+	rotationMatrix._31 = look.x;  rotationMatrix._32 = look.y;  rotationMatrix._33 = look.z;  rotationMatrix._34 = 0.0f;
+	rotationMatrix._41 = 0.0f;    rotationMatrix._42 = 0.0f;    rotationMatrix._43 = 0.0f;    rotationMatrix._44 = 1.0f;
+
+	m_pShild->SetRotationTransform(&rotationMatrix);
+
+	UpdateBoundingBox();
 }

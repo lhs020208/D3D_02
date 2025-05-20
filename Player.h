@@ -60,6 +60,7 @@ public:
 	void Rotate(float x, float y, float z);
 
 	void Update(float fTimeElapsed);
+	virtual void Animate(float fElapsedTime) { }
 	void reset();
 
 	virtual void OnPlayerUpdateCallback(float fTimeElapsed) { }
@@ -86,7 +87,32 @@ public:
 	virtual ~CCubePlayer();
 
 	virtual CCamera *ChangeCamera(DWORD nNewCameraMode, float fTimeElapsed);
-	virtual void OnPrepareRender();
 };
 
+class CTankPlayer : public CPlayer
+{
+public:
+	CTankPlayer() {}
+	virtual ~CTankPlayer() {}
 
+	virtual void OnPrepareRender();
+	virtual void Animate(float fElapsedTime) override;
+	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
+	virtual void Rotate(float fPitch = 0.0f, float fYaw = 0.0f, float fRoll = 0.0f) override;
+
+	bool OnShild = false;
+	void SwitchShild() { OnShild = !OnShild; }
+	bool shot = false;
+	void SwitchBullet() { shot = !shot; }
+	int bullet_timer = 0;
+	void CTankPlayer::SetBulletPosition();
+
+	CCubeObject* m_pShild;
+	CGameObject* m_pBullet;
+
+	CTankObject* ToggleObject;
+	bool Toggle = false;
+
+	int move_z = 0;
+	int	move_x = 0;
+};

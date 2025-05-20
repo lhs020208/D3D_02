@@ -232,6 +232,12 @@ void CGameObject::GenerateRayForPicking(XMVECTOR& xmvPickPosition, XMMATRIX& xmm
 	xmvPickRayDirection = XMVector3TransformCoord(xmvPickPosition, xmmtxToModel);
 	xmvPickRayDirection = XMVector3Normalize(xmvPickRayDirection - xmvPickRayOrigin);
 }
+void CGameObject::SetRotationTransform(XMFLOAT4X4* pmxf4x4Transform)
+{
+	m_xmf4x4World._11 = pmxf4x4Transform->_11; m_xmf4x4World._12 = pmxf4x4Transform->_12; m_xmf4x4World._13 = pmxf4x4Transform->_13;
+	m_xmf4x4World._21 = pmxf4x4Transform->_21; m_xmf4x4World._22 = pmxf4x4Transform->_22; m_xmf4x4World._23 = pmxf4x4Transform->_23;
+	m_xmf4x4World._31 = pmxf4x4Transform->_31; m_xmf4x4World._32 = pmxf4x4Transform->_32; m_xmf4x4World._33 = pmxf4x4Transform->_33;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -286,8 +292,9 @@ void CTitleObject::Animate(float fElapsedTime)
 	else
 	{
 		Rotate(0.0f * fElapsedTime, 10.0f * fElapsedTime, 0.0f * fElapsedTime);
-		UpdateBoundingBox();
 	}
+
+	UpdateBoundingBox();
 }
 
 void CTitleObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
@@ -346,3 +353,96 @@ void CTitleObject::ReleaseUploadBuffers()
 	}
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CTankObject::Animate(float fElapsedTime)
+{
+	if (IsExist()) {
+		if (m_bBlowingUp)
+		{
+			m_fElapsedTimes += fElapsedTime;
+			if (m_fElapsedTimes >= m_fDuration)
+			{
+				SetExist(false);
+				return;
+			}
+
+			for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+				XMFLOAT3 direction = m_pxmf3SphereVectors[i];
+				XMFLOAT3 position = Vector3::Add(GetPosition(), Vector3::ScalarProduct(direction, m_fElapsedTimes * m_fExplosionSpeed));
+				XMFLOAT4X4 world = Matrix4x4::RotationAxis(direction, m_fElapsedTimes * XMConvertToRadians(m_fExplosionRotation));
+				world._41 = position.x; world._42 = position.y; world._43 = position.z;
+				m_pxmf4x4Transforms[i] = world;
+			}
+		}
+		else
+		{
+			int forward_Step = 100;
+			if (timer < forward_Step)
+				SetPosition(Vector3::Add(GetPosition(), Vector3::ScalarProduct(GetLook(), fElapsedTime * 0.5f, false)));
+			if (timer >= forward_Step && timer < forward_Step + 90)
+				Rotate(0.0f, 2.0f, 0.0f);
+			if (timer >= forward_Step + 90 && timer < 2 * forward_Step + 90)
+				SetPosition(Vector3::Add(GetPosition(), Vector3::ScalarProduct(GetLook(), fElapsedTime * 0.5f, false)));
+			if (timer >= 2 * forward_Step + 90 && timer < 2 * forward_Step + 180)
+				Rotate(0.0f, 2.0f, 0.0f);
+
+			timer++;
+			if (timer == 2 * forward_Step + 180) timer = 0;
+
+			if (shot) {
+				bullet_timer++;
+				bullet->SetPosition(Vector3::Add(bullet->GetPosition(), Vector3::ScalarProduct(bullet->GetLook(), fElapsedTime * 2.0f, false)));
+				if (bullet_timer >= 200) {
+					bullet_timer = 0;
+					SwitchShot();
+				}
+			}
+			else {
+				using namespace std;
+				default_random_engine dre{ random_device{}() };
+				uniform_int_distribution<int> uid{ 0,100 };
+				if (uid(dre) == 0) {
+					bullet->SetPosition(GetPosition().x, GetPosition().y, GetPosition().z);
+
+					XMFLOAT3 right = GetRight();
+					XMFLOAT3 up = GetUp();
+					XMFLOAT3 look = GetLook();
+
+					XMFLOAT4X4 rotationMatrix;
+					rotationMatrix._11 = right.x; rotationMatrix._12 = right.y; rotationMatrix._13 = right.z; rotationMatrix._14 = 0.0f;
+					rotationMatrix._21 = up.x;    rotationMatrix._22 = up.y;    rotationMatrix._23 = up.z;    rotationMatrix._24 = 0.0f;
+					rotationMatrix._31 = look.x;  rotationMatrix._32 = look.y;  rotationMatrix._33 = look.z;  rotationMatrix._34 = 0.0f;
+					rotationMatrix._41 = 0.0f;    rotationMatrix._42 = 0.0f;    rotationMatrix._43 = 0.0f;    rotationMatrix._44 = 1.0f;
+
+					bullet->SetRotationTransform(&rotationMatrix);
+
+					SwitchShot();
+				}
+			}
+		}
+	}
+
+	UpdateBoundingBox();
+	bullet->UpdateBoundingBox();
+}
+
+void CTankObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
+{
+	if (IsExist()) {
+		if (m_bBlowingUp)
+		{
+			for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+				if (pCamera->IsInFrustum(m_xmOOBB)) {
+					if (m_pxmf4x4Transforms[i]._42 > -0.2f) {
+						CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i], m_pExplosionMesh);
+					}
+				}
+			}
+		}
+		else
+		{
+			CGameObject::Render(pd3dCommandList, pCamera);
+			if (shot)
+				bullet->Render(pd3dCommandList, pCamera);
+		}
+	}
+}
