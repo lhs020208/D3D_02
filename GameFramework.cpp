@@ -570,6 +570,12 @@ void CGameFramework::FrameAdvance()
 
     AnimateObjects();
 
+	if (m_bPendingSceneChange) {
+		WaitForGpuComplete();
+		ChangeScene(m_nPendingSceneNumber);
+		m_bPendingSceneChange = false;
+	}
+
 	HRESULT hResult = m_pd3dCommandAllocator->Reset();
 	hResult = m_pd3dCommandList->Reset(m_pd3dCommandAllocator, NULL);
 
@@ -597,16 +603,6 @@ void CGameFramework::FrameAdvance()
 	if (m_pScene) m_pScene->PrepareRender(m_pd3dCommandList);
 	UpdateShaderVariables();
 	if (m_pScene) m_pScene->Render(m_pd3dCommandList, m_pCamera);
-
-	if (m_bPendingSceneChange) {
-		m_pd3dCommandList->Close();
-		ID3D12CommandList* ppd3dCommandLists[] = { m_pd3dCommandList };
-		m_pd3dCommandQueue->ExecuteCommandLists(1, ppd3dCommandLists);
-		WaitForGpuComplete();
-
-		ChangeScene(m_nPendingSceneNumber);
-		m_bPendingSceneChange = false;
-	}
 
 #ifdef _WITH_PLAYER_TOP
 	m_pd3dCommandList->ClearDepthStencilView(d3dDsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
@@ -652,10 +648,10 @@ void CGameFramework::ReBuildObjects(int i)
 	switch (i)
 	{
 	case 0:
-		m_pScene = new CMenuScene();
+		m_pScene = new CTitleScene();
 		break;
 	case 1:
-		m_pScene = new CTitleScene();
+		m_pScene = new CMenuScene();
 		break;
 	case 2:
 		m_pScene = new CRollerCoasterScene();
@@ -748,6 +744,7 @@ void CGameFramework::ChangeScene(int newSceneNumber)
 }
 
 void CGameFramework::RequestSceneChange(int sceneNumber) {
+	OutputDebugString(L"RequestSceneChange called\n");
 	m_bPendingSceneChange = true;
 	m_nPendingSceneNumber = sceneNumber;
 }

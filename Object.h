@@ -91,6 +91,7 @@ public:
 	void Rotate(XMFLOAT3& xmf3Axis, float fAngle);
 	void PrepareExplosion(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList);
 	bool IsBlowingUp() { return m_bBlowingUp; }
+	bool m_bSceneRequested = false;
 
 public:
 	bool m_bBlowingUp = false;

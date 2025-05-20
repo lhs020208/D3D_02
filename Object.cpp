@@ -270,11 +270,10 @@ CTitleObject::~CTitleObject()
 void CTitleObject::Animate(float fElapsedTime)
 {
 	extern CGameFramework* g_pFramework;
-	static bool bSceneChanged = false;
 	if (m_bBlowingUp)
 	{
-		if (!bSceneChanged && m_fElapsedTimes >= (m_fDuration - 0.3f)) {
-			bSceneChanged = true;
+		if (m_fElapsedTimes >= (m_fDuration - 0.3f)) {
+			m_bSceneRequested = true;
 			if (g_pFramework) g_pFramework->RequestSceneChange(1);
 		}
 
