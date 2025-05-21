@@ -117,4 +117,10 @@ public:
 
 	CTankObject* ToggleObject;
 	bool Toggle = false;
+private:
+	XMFLOAT3 m_xmf3MoveVector = { 0.0f, 0.0f, 0.0f };
+
+public:
+	const XMFLOAT3& GetMoveVector() const { return m_xmf3MoveVector; }
+	void ClearMoveVector() { m_xmf3MoveVector = { 0.0f, 0.0f, 0.0f }; }
 };

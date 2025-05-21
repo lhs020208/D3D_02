@@ -318,23 +318,13 @@ void CTankPlayer::Animate(float fElapsedTime)
 	XMFLOAT3 look = GetLook();
 	XMFLOAT3 right = GetRight();
 
-	XMFLOAT3 moveVec = { 0.0f, 0.0f, 0.0f };
-
-	// 이동 거리 스케일
 	float speed = fElapsedTime * 0.5f;
 
-	// 방향별 적용
-	moveVec.x += right.x * move_x * speed;
-	moveVec.z += right.z * move_x * speed;
-
-	moveVec.x += look.x * move_z * speed;
-	moveVec.z += look.z * move_z * speed;
-
-	// 위치 갱신
-	XMFLOAT3 now_pos = GetPosition();
-	SetPosition(now_pos.x + moveVec.x, now_pos.y, now_pos.z + moveVec.z);
-
-	m_pShild->SetPosition(now_pos.x + moveVec.x, now_pos.y, now_pos.z + moveVec.z);
+	m_xmf3MoveVector = {
+	   right.x * move_x * speed + look.x * move_z * speed,
+	   0.0f,
+	   right.z * move_x * speed + look.z * move_z * speed
+	};
 
 	CTankPlayer::OnPrepareRender();
 

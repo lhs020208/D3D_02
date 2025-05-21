@@ -857,34 +857,40 @@ void CTankScene::CheckPlayerByBulletCollisions()
 		}
 	}
 }
+
 void CTankScene::CheckPlayerByObjectCollisions(float fElapsedTime)
 {
 	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
-	if (pTankPlayer) {
-		for (int i = 0; i < m_nCubeObjects; i++)
-		{
-			if (m_pCubeObjects[i])
-				if (pTankPlayer->m_xmOOBB.Intersects(m_pCubeObjects[i]->m_xmOOBB))
-				{
-					OutputDebugString(L"Ãæµ¹!\n");
+	if (!pTankPlayer) return;
 
-					XMFLOAT3 look = m_pPlayer->GetLook();
-					XMFLOAT3 right = m_pPlayer->GetRight();
-					XMFLOAT3 now_pos = m_pPlayer->GetPosition();
-					XMFLOAT3 moveVec = { 0.0f, 0.0f, 0.0f };
-					float speed = fElapsedTime * 1.5f;
+	const XMFLOAT3& moveVec = pTankPlayer->GetMoveVector();
 
-					moveVec.z -= right.z * m_pPlayer->move_x * speed;
-					moveVec.z -= right.z * m_pPlayer->move_x * speed;
+	BoundingOrientedBox movedBox = pTankPlayer->m_xmOOBB;
+	movedBox.Center.x += moveVec.x;
+	movedBox.Center.z += moveVec.z;
 
-					moveVec.x -= look.x * m_pPlayer->move_z * speed;
-					moveVec.z -= look.z * m_pPlayer->move_z * speed;
-
-					m_pPlayer->SetPosition(now_pos.x + moveVec.x, now_pos.y, now_pos.z + moveVec.z);
-				}
+	bool blocked = false;
+	for (int i = 0; i < m_nCubeObjects; i++) {
+		if (m_pCubeObjects[i] && movedBox.Intersects(m_pCubeObjects[i]->m_xmOOBB)) {
+			blocked = true;
+			break;
 		}
 	}
+
+	if (!blocked) {
+		XMFLOAT3 nowPos = pTankPlayer->GetPosition();
+		pTankPlayer->SetPosition(nowPos.x + moveVec.x, nowPos.y, nowPos.z + moveVec.z);
+		if (pTankPlayer->m_pShild) {
+			pTankPlayer->m_pShild->SetPosition(nowPos.x + moveVec.x, nowPos.y, nowPos.z + moveVec.z);
+		}
+	}
+
+	pTankPlayer->UpdateBoundingBox();
+	if (pTankPlayer->m_pShild) pTankPlayer->m_pShild->UpdateBoundingBox();
+
+	pTankPlayer->ClearMoveVector();
 }
+
 void CTankScene::CheckBulletByObjectCollisions()
 {
 	CTankPlayer* pTankPlayer = dynamic_cast<CTankPlayer*>(m_pPlayer);
