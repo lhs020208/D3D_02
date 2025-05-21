@@ -636,7 +636,6 @@ void CTankScene::ReleaseUploadBuffers()
 {
 	if (m_pFloorObject) m_pFloorObject->ReleaseUploadBuffers();
 	for (int i = 0; i < m_nTanks; i++) {
-		if (m_pTank[i]->bullet) m_pTank[i]->bullet->ReleaseUploadBuffers();
 		if (m_pTank[i]) m_pTank[i]->ReleaseUploadBuffers();
 		if (m_pExplosionObjects[i]) m_pExplosionObjects[i]->ReleaseUploadBuffers();
 	}

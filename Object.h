@@ -123,6 +123,7 @@ public:
 
 	virtual void Animate(float fElapsedTime) override;
 	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera) override;
+	virtual void ReleaseUploadBuffers() override;
 	void PrepareExplosion();
 	bool IsBlowingUp() { return m_bBlowingUp; }
 	bool IsExist() { return is_exist; }
@@ -131,10 +132,10 @@ public:
 	void SwitchShot() { shot = !shot; bullet_timer = 0; }
 	bool IsShot() { return shot; }
 
+
 	XMFLOAT4X4 m_pxmf4x4Transforms[EXPLOSION_DEBRISES];
 	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
 
-	CMesh* m_pExplosionMesh = nullptr;
 	CGameObject* bullet;
 private:
 	bool is_exist = true;

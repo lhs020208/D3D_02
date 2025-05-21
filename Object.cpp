@@ -447,3 +447,9 @@ void CTankObject::PrepareExplosion()
 		XMStoreFloat3(&m_pxmf3SphereVectors[i], RandomUnitVectorOnSphere());
 	}
 }
+
+void CTankObject::ReleaseUploadBuffers()
+{
+	CGameObject::ReleaseUploadBuffers();
+	if (bullet) bullet->ReleaseUploadBuffers();
+}
