@@ -631,7 +631,7 @@ void CGameFramework::FrameAdvance()
 #ifdef _WITH_SYNCH_SWAPCHAIN
 	m_pdxgiSwapChain->Present(1, 0);
 #else
-	m_pdxgiSwapChain->Present(0, 0);
+	m_pdxgiSwapChain->Present(1, 0);
 #endif
 #endif
 
