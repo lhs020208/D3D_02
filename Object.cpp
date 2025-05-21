@@ -253,8 +253,17 @@ void CCubeObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pC
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void CExplosionObject::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCamera)
 {
-	for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
-		CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i]);
+	if (Scene_number != 3) {
+		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+			CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i]);
+		}
+	}
+	else {
+		for (int i = 0; i < EXPLOSION_DEBRISES; i++) {
+			if (m_pxmf4x4Transforms[i]._42 > -0.2f) {
+				CGameObject::Render(pd3dCommandList, pCamera, &m_pxmf4x4Transforms[i]);
+			}
+		}
 	}
 	
 }

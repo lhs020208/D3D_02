@@ -231,7 +231,7 @@ CCubePlayer::CCubePlayer(ID3D12Device *pd3dDevice, ID3D12GraphicsCommandList *pd
 	m_pCamera = ChangeCamera(THIRD_PERSON_CAMERA, 0.0f);
 
 	SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
-	SetColor(XMFLOAT3(0.0f, 0.25f, 0.875f));
+	SetColor(XMFLOAT3(0.0f, 0.0f, 1.0f));
 
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
 
@@ -280,7 +280,7 @@ CTankPlayer::CTankPlayer(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd
 	m_pCamera = ChangeCamera(THIRD_PERSON_CAMERA, 0.0f);
 
 	SetPosition(XMFLOAT3(0.0f, 0.0f, 0.0f));
-	SetColor(XMFLOAT3(0.0f, 0.25f, 0.875f));
+	SetColor(XMFLOAT3(0.0f, 0.0f, 1.0f));
 
 	CreateShaderVariables(pd3dDevice, pd3dCommandList);
 

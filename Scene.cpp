@@ -560,6 +560,7 @@ void CTankScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLis
 	uniform_int_distribution<int> uid_x_int(-9, 9);
 	uniform_int_distribution<int> uid_z_int(-9, 9);
 	uniform_real_distribution<float> uid_rot{ 0,360.0f };
+
 	for (int i = 0; i < m_nTanks; i++)
 	{
 		float red = uid(dre);
