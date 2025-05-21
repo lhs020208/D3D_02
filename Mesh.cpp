@@ -257,6 +257,9 @@ CCubeMesh::CCubeMesh(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList,
 	m_d3dIndexBufferView.BufferLocation = m_pd3dIndexBuffer->GetGPUVirtualAddress();
 	m_d3dIndexBufferView.Format = DXGI_FORMAT_R32_UINT;
 	m_d3dIndexBufferView.SizeInBytes = ibSize;
+
+	m_xmOOBB.Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	m_xmOOBB.Extents = XMFLOAT3(fWidth * 0.5f, fHeight * 0.5f, fDepth * 0.5f);
 }
 CCubeMesh::CCubeMesh(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, int T) : CMesh(6)
 {

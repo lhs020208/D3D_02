@@ -867,6 +867,8 @@ void CTankScene::CheckPlayerByObjectCollisions(float fElapsedTime)
 			if (m_pCubeObjects[i])
 				if (pTankPlayer->m_xmOOBB.Intersects(m_pCubeObjects[i]->m_xmOOBB))
 				{
+					OutputDebugString(L"Ãæµ¹!\n");
+
 					XMFLOAT3 look = m_pPlayer->GetLook();
 					XMFLOAT3 right = m_pPlayer->GetRight();
 					XMFLOAT3 now_pos = m_pPlayer->GetPosition();
