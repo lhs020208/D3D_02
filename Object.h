@@ -137,6 +137,7 @@ public:
 	XMFLOAT3 m_pxmf3SphereVectors[EXPLOSION_DEBRISES];
 
 	CGameObject* bullet;
+	CExplosionObject* m_pExplosionObjects;
 private:
 	bool is_exist = true;
 	bool m_bBlowingUp = false;

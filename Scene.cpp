@@ -586,12 +586,12 @@ void CTankScene::BuildObjects(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandLis
 		m_pTank[i]->bullet->UpdateBoundingBox();
 
 		CCubeMesh* pCubeMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 0.05f, 0.05f, 0.05f);
-		m_pExplosionObjects[i] = new CExplosionObject();
-		m_pExplosionObjects[i]->SetMesh(pCubeMesh);
-		m_pExplosionObjects[i]->SetShader(pShader);
-		m_pExplosionObjects[i]->SetColor(XMFLOAT3(red, green, blue));
-		m_pExplosionObjects[i]->SetPosition(0.0f, 0.0f, 1.0f);
-		m_pExplosionObjects[i]->UpdateBoundingBox();
+		m_pTank[i]->m_pExplosionObjects = new CExplosionObject();
+		m_pTank[i]->m_pExplosionObjects->SetMesh(pCubeMesh);
+		m_pTank[i]->m_pExplosionObjects->SetShader(pShader);
+		m_pTank[i]->m_pExplosionObjects->SetColor(XMFLOAT3(red, green, blue));
+		m_pTank[i]->m_pExplosionObjects->SetPosition(0.0f, 0.0f, 1.0f);
+		m_pTank[i]->m_pExplosionObjects->UpdateBoundingBox();
 	}
 	for (int i = 0; i < m_nCubeObjects; i++) {
 		CCubeMesh* pCubeMesh = new CCubeMesh(pd3dDevice, pd3dCommandList, 1.0f, 1.0f, 1.0f);
@@ -625,8 +625,8 @@ void CTankScene::ReleaseObjects()
 	if (m_pFloorObject) delete m_pFloorObject;
 	for (int i = 0; i < m_nTanks; i++) {
 		if (m_pTank[i]->bullet)delete m_pTank[i]->bullet;
+		if (m_pTank[i]->m_pExplosionObjects)delete m_pTank[i]->m_pExplosionObjects;
 		if (m_pTank[i])delete m_pTank[i];
-		if (m_pExplosionObjects[i])delete m_pExplosionObjects[i];
 	}
 	for (int i = 0; i < m_nCubeObjects; i++)
 		if (m_pCubeObjects[i])delete m_pCubeObjects[i];
@@ -637,7 +637,7 @@ void CTankScene::ReleaseUploadBuffers()
 	if (m_pFloorObject) m_pFloorObject->ReleaseUploadBuffers();
 	for (int i = 0; i < m_nTanks; i++) {
 		if (m_pTank[i]) m_pTank[i]->ReleaseUploadBuffers();
-		if (m_pExplosionObjects[i]) m_pExplosionObjects[i]->ReleaseUploadBuffers();
+		if (m_pTank[i]->m_pExplosionObjects) m_pTank[i]->m_pExplosionObjects->ReleaseUploadBuffers();
 	}
 	for (int i = 0; i < m_nCubeObjects; i++) {
 		if (m_pCubeObjects[i]) m_pCubeObjects[i]->ReleaseUploadBuffers();
@@ -662,7 +662,7 @@ void CTankScene::Render(ID3D12GraphicsCommandList* pd3dCommandList, CCamera* pCa
 		
 		if (m_pTank[i]->IsExist()) {
 			if (m_pTank[i]->IsBlowingUp()) {
-				m_pExplosionObjects[i]->Render(pd3dCommandList, pCamera);
+				m_pTank[i]->m_pExplosionObjects->Render(pd3dCommandList, pCamera);
 			}
 			else {
 				m_pTank[i]->Render(pd3dCommandList, pCamera);
@@ -915,8 +915,8 @@ void CTankScene::Animate(float fElapsedTime)
 			m_pTank[i]->Animate(fElapsedTime);
 			if (m_pTank[i]->IsBlowingUp()) {
 				for (int j = 0; j < EXPLOSION_DEBRISES; j++) {
-					m_pExplosionObjects[i]->m_pxmf4x4Transforms[j] = m_pTank[i]->m_pxmf4x4Transforms[j];
-					m_pExplosionObjects[i]->m_pxmf3SphereVectors[j] = m_pTank[i]->m_pxmf3SphereVectors[j];
+					m_pTank[i]->m_pExplosionObjects->m_pxmf4x4Transforms[j] = m_pTank[i]->m_pxmf4x4Transforms[j];
+					m_pTank[i]->m_pExplosionObjects->m_pxmf3SphereVectors[j] = m_pTank[i]->m_pxmf3SphereVectors[j];
 				}
 			}
 		}

@@ -116,7 +116,6 @@ private:
 
 	static const int m_nTanks = 10;
 	CTankObject* m_pTank[m_nTanks];
-	CExplosionObject* m_pExplosionObjects[m_nTanks];
 
 	static const int m_nCubeObjects = 5;
 	CCubeObject* m_pCubeObjects[m_nCubeObjects];
